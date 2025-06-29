@@ -1,0 +1,1 @@
+Banqi only in LAN
