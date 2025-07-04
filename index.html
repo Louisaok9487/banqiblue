@@ -1,982 +1,835 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>藍氏暗棋 (Banqi - Dark Chess)</title>
+    <title>藍氏暗棋</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        /* Reverting to previous font setup, removing Ma Shan Zheng */
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&family=Noto+Sans+TC:wght@400;700&display=swap');
+        :root {
+            --board-bg: #d8c3a5;
+            --board-border: #8e795e;
+            --piece-bg: #f9f6f2;
+            --piece-shadow: rgba(0,0,0,0.3);
+            --red-text: #c84b31;
+            --black-text: #2d2d2d;
+            --selected-glow: #f7b733;
+            --hint-color: rgba(10, 132, 38, 0.5);
+            --font-family-status: 'Noto Serif TC', serif;
+            --font-family-piece: 'Ma Shan Zheng', cursive;
+        }
 
         body {
-            font-family: 'Noto Sans TC', 'Noto Sans SC', sans-serif; /* Prefer Traditional Chinese font first */
+            font-family: var(--font-family-status);
+            background-color: #f0e9dc;
+            /* 使用者提供的背景圖片 */
+            background-image: url('data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAH0BDgDASIAAhEBAxEB/8QAHQAAAQQDAQEAAAAAAAAAAAAAAAQFBgcCAwgBCf/EAGEQAAEDAwIDBAUGCQkJCwgDAQECAwQABREGEiExBxNBUWEUIjJxgZEVFiNCUpKhsQkzNDU2N1idwdIXJENTY4KiwtFERVWTlKOTo7PC8PE4Vld0g4SVo8MmRmWVwv/EABsBAQEBAQEBAQEAAAAAAAAAAAABAgMEBQYH/8QAPBEAAgECAwQHBgQGAgMBAAAAAAECEQMEEiExBUFRcRNSYZEGFCIygaGxwdHwI0JS4fEzYnLxJIKiFUP/2gAMAwEAAhEDEQA/APKYoooqRhRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQ-1EAmFFFFIoUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUU-D/9k=');
+            background-size: cover;
+            background-position: center;
+            overflow-y: auto; /* 允許垂直滾動 */
+        }
+
+        .game-wrapper {
+            background-color: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(5px);
+            padding: 1rem;
+            border-radius: 20px;
             display: flex;
-            flex-direction: column;
             align-items: center;
-            justify-content: flex-start; /* Align to top to better utilize vertical space on small screens */
+            justify-content: center;
+            width: 100%;
             min-height: 100vh;
-            background-color: #f0f8ff; /* Alice Blue */
-            margin: 0;
-            padding: 10px; /* Reduced padding for smaller screens */
-            box-sizing: border-box;
-            color: #333;
         }
 
         .game-container {
-            background-color: #fff;
+            width: 100%;
+            max-width: 500px;
+            margin: 2rem auto; /* 增加上下邊距 */
+            padding: 1.5rem;
+            background-color: var(--board-bg);
+            background-image: url('https://www.transparenttextures.com/patterns/wood-pattern.png');
             border-radius: 15px;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
-            padding: 20px; /* Slightly reduced padding */
-            text-align: center;
-            max-width: 95%; /* Increased max-width for better use of space */
-            width: 500px; /* Base width */
-            margin-bottom: 10px; /* Reduced margin */
-            border: 2px solid #a0c0ff; /* Light blue border */
-            display: flex; /* Use flex to control internal layout */
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.25), 0 5px 10px rgba(0,0,0,0.15);
+            border: 8px solid var(--board-border);
         }
 
-        h1 {
-            color: #3f51b5; /* Indigo */
-            font-size: 2.2em; /* Slightly smaller for mobile */
-            margin-bottom: 15px;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
-            font-family: 'Noto Sans TC', 'Noto Sans SC', sans-serif; /* Reverted to previous font */
-            font-weight: bold; /* Keeping it bold for emphasis */
-        }
-
-        .status-message {
-            font-size: 1.1em; /* Slightly smaller */
-            font-weight: bold;
-            margin-bottom: 10px; /* Reduced margin */
-            color: #6a1b9a; /* Deep Purple */
-            min-height: 1.4em; /* Prevent layout shift */
-        }
-
-        .board {
+        #game-board {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            grid-template-rows: repeat(8, 1fr);
-            gap: 2px; /* Small gap between cells */
-            width: 100%;
-            padding: 5px;
-            background-color: #a0c0ff; /* Board background */
-            border-radius: 8px;
-            aspect-ratio: 4 / 8; /* Maintain aspect ratio */
-            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
-            border: 1px solid #7986cb;
-        }
-
-        .cell {
-            width: 100%;
-            aspect-ratio: 1 / 1; /* Make cells square */
-            background-color: #e0f2f7; /* Light Cyan */
-            border: 1px solid #b3e5fc; /* Lighter blue border */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.8em;
-            cursor: pointer;
-            user-select: none;
-            position: relative;
-            border-radius: 5px;
-            transition: background-color 0.2s ease, transform 0.1s ease;
-        }
-
-        .cell:hover {
-            background-color: #c0d9ef; /* Lighter hover */
-        }
-
-        .cell.selected {
-            background-color: #ffd700; /* Gold */
-            border: 2px solid #daaa00;
-            transform: scale(1.02);
-            box-shadow: 0 0 10px rgba(255, 215, 0, 0.7);
-        }
-
-        .cell.highlight {
-            background-color: #81c784; /* Light Green */
-            border: 2px solid #4caf50;
-            transform: scale(1.02);
-            box-shadow: 0 0 10px rgba(76, 175, 80, 0.7);
-        }
-
-        .cell.highlight:hover {
-            background-color: #66bb6a;
-        }
-
-        /* Piece styling - mimicking the circular Chinese chess pieces */
-        .piece-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 90%; /* Piece takes up most of the cell */
-            height: 90%;
-            border-radius: 50%; /* Make it round */
-            box-sizing: border-box;
-            font-weight: bold;
-            font-size: 1.8em; /* Adjusted for circular container */
-            position: relative;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            border: 1px solid rgba(0,0,0,0.2); /* Subtle border for depth */
-            /* Added transition for smoother visual updates */
-            transition: transform 0.2s ease-out, background-color 0.2s ease-out;
-        }
-
-        .piece-container.red-piece {
-            background-color: #fce4ec; /* Light pink background for red pieces */
-            border-color: #e57373; /* Red border */
-            color: #d32f2f; /* Dark Red character */
-        }
-
-        .piece-container.black-piece {
-            background-color: #e0e0e0; /* Light grey background for black pieces */
-            border-color: #616161; /* Dark grey border */
-            color: #212121; /* Dark Grey character */
-        }
-
-        .facedown .piece-container {
-            background-color: #64b5f6; /* Blue back for facedown */
-            border-color: #42a5f5; /* Darker blue border */
-            box-shadow: inset 0 0 5px rgba(0,0,0,0.3);
-            color: transparent; /* Hide piece value */
-        }
-        /* No text content for facedown pieces, just the blue background */
-
-        .controls {
-            margin-top: 15px; /* Reduced margin */
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px; /* Reduced gap */
-            justify-content: center;
-        }
-
-        button {
-            padding: 10px 20px; /* Reduced padding */
-            font-size: 1em; /* Slightly smaller */
-            background-color: #4CAF50; /* Green */
-            color: white;
-            border: none;
-            border-radius: 30px;
-            cursor: pointer;
-            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
-            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
-            font-weight: bold;
-        }
-
-        button:hover {
-            background-color: #43A047; /* Darker Green */
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(76, 175, 80, 0.6);
-        }
-
-        button:active {
-            transform: translateY(0);
-            box-shadow: 0 3px 10px rgba(76, 175, 80, 0.4);
-        }
-
-        .player-select-container {
-            margin-top: 10px; /* Adjusted margin */
-            padding: 15px;
-            border: 1px solid #ccc;
-            border-radius: 10px;
-            background-color: #e8f5e9; /* Light green background */
-        }
-
-        .player-select-container h2 {
-            color: #3f51b5;
-            margin-bottom: 10px; /* Reduced margin */
-            font-size: 1.5em; /* Adjusted for mobile */
-        }
-        .player-select-container button {
-            background-color: #66bb6a;
-            box-shadow: 0 4px 10px rgba(102, 187, 106, 0.3);
-        }
-        .player-select-container button:hover {
-            background-color: #5cb85c;
-            box-shadow: 0 6px 15px rgba(102, 187, 106, 0.4);
-        }
-
-        .draw-offer-controls {
-            margin-top: 10px;
-            display: flex;
-            flex-wrap: wrap; /* Allow wrapping on small screens */
             gap: 10px;
+            background-color: rgba(142, 121, 94, 0.5);
+            border: 2px solid var(--board-bg);
+            padding: 10px;
+            border-radius: 10px;
+            position: relative;
+        }
+
+        .piece {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            border-radius: 50%;
+            display: flex;
             justify-content: center;
+            align-items: center;
+            font-size: clamp(2rem, 6vw, 2.8rem); /* 稍微加大字體 */
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            transform-style: preserve-3d;
+            background-color: var(--piece-bg);
+            box-shadow: inset 0 -3px 5px rgba(0,0,0,0.1), 0 5px 10px var(--piece-shadow);
+            border: 3px solid var(--board-border);
         }
-        .draw-offer-controls button {
-            background-color: #ff9800; /* Orange for draw actions */
-            box-shadow: 0 4px 10px rgba(255, 152, 0, 0.3);
-        }
-        .draw-offer-controls button:hover {
-            background-color: #fb8c00;
-            box-shadow: 0 6px 15px rgba(255, 152, 0, 0.4);
-        }
-        .draw-offer-controls button.decline {
-            background-color: #f44336; /* Red for decline */
-            box-shadow: 0 4px 10px rgba(244, 67, 54, 0.3);
-        }
-        .draw-offer-controls button.decline:hover {
-            background-color: #e53935;
+        
+        .piece-inner {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            border-radius: 50%;
         }
 
+        .piece.flipped .piece-inner {
+            transform: rotateY(180deg);
+        }
 
-        /* Specific responsive adjustments for smaller screens */
-        @media (max-width: 600px) {
-            body {
-                padding: 5px; /* Even less padding on smallest screens */
-                justify-content: flex-start; /* Start content higher up */
-            }
-            .game-container {
-                padding: 10px; /* Reduced padding */
-                margin-bottom: 5px; /* Reduced margin */
-                width: 100%; /* Take full width */
-            }
-            h1 {
-                font-size: 1.8em; /* Further reduced */
-                margin-bottom: 10px;
-            }
-            .status-message {
-                font-size: 0.9em;
-                margin-bottom: 8px;
-            }
-            .cell {
-                font-size: 1.2em; /* Smaller piece font */
-            }
-            .piece-container {
-                font-size: 1.2em;
-            }
-            button {
-                padding: 8px 15px; /* Smaller buttons */
-                font-size: 0.9em;
-            }
-            .controls {
-                gap: 8px; /* Smaller gap in controls */
-            }
-            .player-select-container {
-                padding: 10px;
-            }
-            .player-select-container h2 {
-                font-size: 1.2em;
+        .piece-front, .piece-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .piece-back {
+            font-family: var(--font-family-status);
+            background-color: #a89a87;
+            color: var(--board-bg);
+            font-size: 2.5rem;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+        
+        .piece-front {
+            font-family: var(--font-family-piece); /* 使用書法字體 */
+            background-color: var(--piece-bg);
+            transform: rotateY(180deg);
+        }
+
+        .piece.red-piece .piece-front {
+            color: var(--red-text);
+            border: 3px solid var(--red-text);
+            text-shadow: 0 0 5px rgba(200, 75, 49, 0.5);
+        }
+
+        .piece.black-piece .piece-front {
+            color: var(--black-text);
+            border: 3px solid var(--black-text);
+            text-shadow: 0 0 5px rgba(45, 45, 45, 0.3);
+        }
+        
+        .piece.selected {
+            box-shadow: 0 0 25px 8px var(--selected-glow), inset 0 -3px 5px rgba(0,0,0,0.1);
+            transform: scale(1.08);
+        }
+
+        .hint::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 25%;
+            height: 25%;
+            background-color: var(--hint-color);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.7; transform: translate(-50%, -50%) scale(0.8); }
+            50% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+            100% { opacity: 0.7; transform: translate(-50%, -50%) scale(0.8); }
+        }
+        
+        #game-status {
+            font-family: var(--font-family-status);
+            font-size: 1.25rem;
+            font-weight: 600;
+            text-align: center;
+            padding: 1rem;
+            min-height: 70px;
+            color: var(--black-text);
+            background-color: rgba(255,255,255,0.6);
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
+        }
+
+        #restart-button {
+            background-color: var(--board-border);
+            color: var(--piece-bg);
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-family: var(--font-family-status);
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 8px var(--piece-shadow);
+        }
+
+        #restart-button:hover {
+            background-color: #7a684e;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px var(--piece-shadow);
+        }
+
+        /* Modal Base Styles */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s, visibility 0.5s;
+        }
+        .modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-box {
+            padding: 3rem 4rem;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transform: scale(0.7);
+            transition: transform 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+            position: relative;
+            overflow: hidden;
+        }
+        .modal.show .modal-box {
+            transform: scale(1);
+        }
+        .modal-box h2 {
+            font-family: var(--font-family-piece);
+            font-size: 3.5rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+        .modal-box p {
+            font-size: 1.5rem;
+        }
+        
+        /* Victory Modal Specifics */
+        #victory-modal .modal-box {
+             background: linear-gradient(135deg, #fdfcfb, #e2d1c3);
+             color: var(--board-border);
+        }
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 20px;
+            background-color: #f00;
+            top: -50px;
+            opacity: 0;
+            animation: fall 5s linear infinite;
+        }
+        @keyframes fall {
+            to {
+                transform: translateY(120vh) rotate(360deg);
+                opacity: 1;
             }
         }
+        
+        /* Defeat Modal Specifics */
+        #defeat-modal .modal-box {
+            background: linear-gradient(135deg, #6c757d, #495057);
+            color: #f8f9fa;
+        }
+
     </style>
 </head>
-<body>
-    <div class="game-container">
-        <h1>藍氏暗棋</h1>
-        <div id="statusMessage" class="status-message"></div>
-        <div id="board" class="board"></div>
-        <div class="controls">
-            <button id="drawButton">Offer Draw</button>
-            <button id="resetButton">New Game</button>
-        </div>
+<body class="flex items-center justify-center min-h-screen p-4">
 
-        <!-- Player Selection Overlay/Modal -->
-        <div id="playerSelectOverlay" class="player-select-container">
-            <h2>Choose Game Mode</h2>
-            <div class="controls">
-                <button id="twoPlayersButton">2 Players</button>
-                <button id="vsComputerButton">VS Computer</button>
+    <div class="game-wrapper">
+        <div class="game-container">
+            <div id="game-status"></div>
+            <div id="game-board"></div>
+            <div class="text-center mt-4">
+                <button id="restart-button">重新開始</button>
             </div>
         </div>
+    </div>
 
-        <!-- Draw Offer / Response Controls -->
-        <div id="drawOfferResponse" class="draw-offer-controls" style="display: none;">
-            <button id="acceptDrawButton">Accept Draw</button>
-            <button id="declineDrawButton" class="decline">Decline Draw</button>
+    <div id="victory-modal" class="modal">
+        <div class="modal-box">
+            <h2>恭喜通關！</h2>
+            <p>您已成功擊敗對手！</p>
+        </div>
+    </div>
+
+    <div id="defeat-modal" class="modal">
+        <div class="modal-box">
+            <h2>再接再厲！</h2>
+            <p>失敗乃成功之母，東山再起！</p>
         </div>
     </div>
 
     <script>
-        // --- Game Configuration ---
-        const BOARD_SIZE = 32; // 4 rows * 8 columns
-        const COLS = 4;
-        const ROWS = 8;
-        const TURN_DELAY = 300; // Milliseconds for animation/visual pause between turns
-        const THREEFOLD_REPETITION_COUNT = 3; // Number of repetitions for a draw
+        const boardEl = document.getElementById('game-board');
+        const statusEl = document.getElementById('game-status');
+        const restartBtn = document.getElementById('restart-button');
+        const victoryModal = document.getElementById('victory-modal');
+        const defeatModal = document.getElementById('defeat-modal');
 
-        // Define pieces with their properties using Traditional Chinese characters
-        // Added 'score' for AI's material evaluation
-        const pieceTypes = {
-            '帥': { color: 'red', value: '帥', rank: 7, isGeneral: true, display: '帥', score: 70 },
-            '仕': { color: 'red', value: '仕', rank: 6, display: '仕', score: 60 },
-            '象': { color: 'red', value: '象', rank: 5, display: '象', score: 50 },
-            '車': { color: 'red', value: '車', rank: 4, display: '車', score: 40 },
-            '馬': { color: 'red', value: '馬', rank: 3, display: '馬', score: 30 },
-            '炮': { color: 'red', value: '炮', rank: 2, isCannon: true, display: '炮', score: 20 },
-            '兵': { color: 'red', value: '兵', rank: 1, isSoldier: true, display: '兵', score: 10 },
-            '將': { color: 'black', value: '將', rank: 7, isGeneral: true, display: '將', score: 70 },
-            '士': { color: 'black', value: '士', rank: 6, display: '士', score: 60 },
-            '相': { color: 'black', value: '相', rank: 5, display: '相', score: 50 },
-            '俥': { color: 'black', value: '俥', rank: 4, display: '俥', score: 40 }, /* Traditional Chinese Chariot */
-            '傌': { color: 'black', value: '傌', rank: 3, display: '傌', score: 30 }, /* Traditional Chinese Horse */
-            '砲': { color: 'black', value: '砲', rank: 2, isCannon: true, display: '砲', score: 20 }, /* Traditional Chinese Cannon */
-            '卒': { color: 'black', value: '卒', rank: 1, isSoldier: true, display: '卒', score: 10 }
+        const BOARD_WIDTH = 4;
+        const BOARD_HEIGHT = 8;
+        const AI_SEARCH_DEPTH = 4; // AI思考深度, 4 是效能與強度的平衡點
+
+        const PIECE_CONFIG = {
+            'k': { rank: 7, name: '將' }, 'g': { rank: 7, name: '帥' },
+            'a': { rank: 6, name: '士' }, 'd': { rank: 6, name: '仕' },
+            'e': { rank: 5, name: '象' }, 'h': { rank: 5, 'name': '相' },
+            'r': { rank: 4, name: '車' }, 't': { rank: 4, 'name': '俥' },
+            'm': { rank: 3, name: '馬' }, 'n': { rank: 3, 'name': '傌' },
+            'c': { rank: 2, name: '炮' }, 'x': { rank: 2, 'name': '砲' },
+            'p': { rank: 1, name: '卒' }, 's': { rank: 1, 'name': '兵' }
         };
+        
+        // AI 評估棋子價值
+        const pieceValues = { '帥': 10000, '將': 10000, '仕': 120, '士': 120, '相': 120, '象': 120, '俥': 500, '車': 500, '傌': 300, '馬': 300, '砲': 320, '炮': 320, '兵': 80, '卒': 80 };
 
-        // All pieces for one side (16 pieces per side)
-        const allRedPieces = [
-            pieceTypes['帥'],
-            pieceTypes['仕'], pieceTypes['仕'],
-            pieceTypes['象'], pieceTypes['象'],
-            pieceTypes['車'], pieceTypes['車'],
-            pieceTypes['馬'], pieceTypes['馬'],
-            pieceTypes['炮'], pieceTypes['炮'],
-            pieceTypes['兵'], pieceTypes['兵'], pieceTypes['兵'], pieceTypes['兵'], pieceTypes['兵']
+        const PIECES = [
+            { id: 'g1', color: 'red', ...PIECE_CONFIG['g'] },
+            { id: 'd1', color: 'red', ...PIECE_CONFIG['d'] }, { id: 'd2', color: 'red', ...PIECE_CONFIG['d'] },
+            { id: 'h1', color: 'red', ...PIECE_CONFIG['h'] }, { id: 'h2', color: 'red', ...PIECE_CONFIG['h'] },
+            { id: 't1', color: 'red', ...PIECE_CONFIG['t'] }, { id: 't2', color: 'red', ...PIECE_CONFIG['t'] },
+            { id: 'n1', color: 'red', ...PIECE_CONFIG['n'] }, { id: 'n2', color: 'red', ...PIECE_CONFIG['n'] },
+            { id: 'x1', color: 'red', ...PIECE_CONFIG['x'] }, { id: 'x2', color: 'red', ...PIECE_CONFIG['x'] },
+            { id: 's1', color: 'red', ...PIECE_CONFIG['s'] }, { id: 's2', color: 'red', ...PIECE_CONFIG['s'] }, { id: 's3', color: 'red', ...PIECE_CONFIG['s'] }, { id: 's4', color: 'red', ...PIECE_CONFIG['s'] }, { id: 's5', color: 'red', ...PIECE_CONFIG['s'] },
+            
+            { id: 'k1', color: 'black', ...PIECE_CONFIG['k'] },
+            { id: 'a1', color: 'black', ...PIECE_CONFIG['a'] }, { id: 'a2', color: 'black', ...PIECE_CONFIG['a'] },
+            { id: 'e1', color: 'black', ...PIECE_CONFIG['e'] }, { id: 'e2', color: 'black', ...PIECE_CONFIG['e'] },
+            { id: 'r1', color: 'black', ...PIECE_CONFIG['r'] }, { id: 'r2', color: 'black', ...PIECE_CONFIG['r'] },
+            { id: 'm1', color: 'black', ...PIECE_CONFIG['m'] }, { id: 'm2', color: 'black', ...PIECE_CONFIG['m'] },
+            { id: 'c1', color: 'black', ...PIECE_CONFIG['c'] }, { id: 'c2', color: 'black', ...PIECE_CONFIG['c'] },
+            { id: 'p1', color: 'black', ...PIECE_CONFIG['p'] }, { id: 'p2', color: 'black', ...PIECE_CONFIG['p'] }, { id: 'p3', color: 'black', ...PIECE_CONFIG['p'] }, { id: 'p4', color: 'black', ...PIECE_CONFIG['p'] }, { id: 'p5', color: 'black', ...PIECE_CONFIG['p'] },
         ];
-        const allBlackPieces = [
-            pieceTypes['將'],
-            pieceTypes['士'], pieceTypes['士'],
-            pieceTypes['相'], pieceTypes['相'],
-            pieceTypes['俥'], pieceTypes['俥'],
-            pieceTypes['傌'], pieceTypes['傌'],
-            pieceTypes['砲'], pieceTypes['砲'],
-            pieceTypes['卒'], pieceTypes['卒'], pieceTypes['卒'], pieceTypes['卒'], pieceTypes['卒']
-        ];
-
-        // --- Game State Variables ---
-        let board = [];
-        let currentPlayer = 'red'; // Red starts
-        let selectedPieceIndex = null;
+        
+        let boardState = [];
+        let playerColor = null;
+        let aiColor = null;
+        let currentPlayer = null;
+        let selectedPiece = null;
+        let firstMove = true;
         let gameOver = false;
-        let gameMode = null; // 'two-players' or 'vs-computer'
-        let gameHistory = []; // Stores string representations of board states for threefold repetition
-        let drawOfferedBy = null; // 'red', 'black', or null
-        let drawOfferPending = false;
+        let isPlayerTurn = true;
 
-        // --- DOM Elements ---
-        const boardElement = document.getElementById('board');
-        const statusMessageElement = document.getElementById('statusMessage');
-        const resetButton = document.getElementById('resetButton');
-        const drawButton = document.getElementById('drawButton'); // New draw button
-        const playerSelectOverlay = document.getElementById('playerSelectOverlay');
-        const twoPlayersButton = document.getElementById('twoPlayersButton');
-        const vsComputerButton = document.getElementById('vsComputerButton');
-        const drawOfferResponseControls = document.getElementById('drawOfferResponse'); // New draw response div
-        const acceptDrawButton = document.getElementById('acceptDrawButton');
-        const declineDrawButton = document.getElementById('declineDrawButton');
+        let flipSound, moveSound, captureSound;
+        
+        function setupSounds() {
+            if (typeof Tone === 'undefined') return;
+            flipSound = new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0.0, release: 0.1 } }).toDestination();
+            moveSound = new Tone.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0 } }).toDestination();
+            captureSound = new Tone.MembraneSynth({ pitchDecay: 0.05, octaves: 10, oscillator: { type: 'sine' }, envelope: { attack: 0.001, decay: 0.4, sustain: 0.01, release: 1.4, attackCurve: 'exponential' } }).toDestination();
+        }
 
+        function playSound(type) {
+             if (typeof Tone === 'undefined' || Tone.context.state !== 'running') return;
+            try {
+                if (type === 'flip') flipSound.triggerAttackRelease('C5', '8n');
+                if (type === 'move') moveSound.triggerAttackRelease('0.1');
+                if (type === 'capture') captureSound.triggerAttackRelease('C3', '8n');
+            } catch (e) { console.error("音效播放失敗:", e); }
+        }
 
-        // --- Utility Functions ---
+        function initGame() {
+            gameOver = false;
+            firstMove = true;
+            playerColor = null;
+            aiColor = null;
+            currentPlayer = null;
+            selectedPiece = null;
+            isPlayerTurn = true;
+            statusEl.textContent = '歡迎來到藍氏暗棋！點擊棋子開始。';
+            victoryModal.classList.remove('show');
+            defeatModal.classList.remove('show');
+            
+            let shuffledPieces = [...PIECES].sort(() => Math.random() - 0.5);
+            boardState = [];
+            for (let y = 0; y < BOARD_HEIGHT; y++) {
+                let row = [];
+                for (let x = 0; x < BOARD_WIDTH; x++) {
+                    const pieceData = shuffledPieces.pop();
+                    row.push(pieceData ? { ...pieceData, x, y, isFlipped: false } : null);
+                }
+                boardState.push(row);
+            }
+            renderBoard();
+        }
 
-        // Shuffle an array (Fisher-Yates algorithm)
-        function shuffleArray(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
+        function renderBoard() {
+            boardEl.innerHTML = '';
+            for (let y = 0; y < BOARD_HEIGHT; y++) {
+                for (let x = 0; x < BOARD_WIDTH; x++) {
+                    const pieceData = boardState[y][x];
+                    const pieceEl = document.createElement('div');
+                    pieceEl.classList.add('piece');
+                    pieceEl.dataset.x = x;
+                    pieceEl.dataset.y = y;
+
+                    if (pieceData) {
+                        const pieceInner = document.createElement('div');
+                        pieceInner.classList.add('piece-inner');
+                        const pieceFront = document.createElement('div');
+                        pieceFront.classList.add('piece-front');
+                        pieceFront.textContent = pieceData.name;
+                        const pieceBack = document.createElement('div');
+                        pieceBack.classList.add('piece-back');
+                        pieceBack.textContent = '棋';
+                        pieceInner.appendChild(pieceBack);
+                        pieceInner.appendChild(pieceFront);
+                        pieceEl.appendChild(pieceInner);
+
+                        if (pieceData.isFlipped) {
+                            pieceEl.classList.add('flipped', pieceData.color + '-piece');
+                        }
+                        if (selectedPiece && selectedPiece.x === x && selectedPiece.y === y) {
+                            pieceEl.classList.add('selected');
+                        }
+                    } else {
+                        pieceEl.classList.add('empty');
+                    }
+                    boardEl.appendChild(pieceEl);
+                }
             }
         }
 
-        // Get piece at board index
-        function getPiece(index, fromBoard = board) { // Added fromBoard parameter for hypothetical moves
-            if (index < 0 || index >= BOARD_SIZE) return null;
-            return fromBoard[index];
+        function clearHighlights() {
+            document.querySelectorAll('.hint').forEach(el => el.classList.remove('hint'));
         }
 
-        // Get row and column from index
-        function getCoords(index) {
-            return { row: Math.floor(index / COLS), col: index % COLS };
+        function highlightMoves(moves) {
+            moves.forEach(move => {
+                const targetEl = document.querySelector(`.piece[data-x='${move.toX}'][data-y='${move.toY}']`);
+                if (targetEl) {
+                    targetEl.classList.add('hint');
+                }
+            });
         }
 
-        // Get index from row and column
-        function getIndex(row, col) {
-            if (row < 0 || row >= ROWS || col < 0 || col >= COLS) return -1;
-            return row * COLS + col;
-        }
-
-        // Check if two pieces are of the same color
-        function isSameColor(piece1, piece2) {
-            return piece1 && piece2 && piece1.color === piece2.color;
-        }
-
-        // Check standard capture rules (excluding cannon)
-        function canCapture(attacker, defender) {
-            if (!attacker || !defender || attacker.color === defender.color) {
-                return false;
-            }
-            // IMPORTANT: A piece can only capture a *revealed* opponent piece.
-            if (!defender.revealed) {
-                return false;
-            }
-
-            // Soldier (兵/卒) special capture
-            if (attacker.isSoldier) {
-                return defender.isGeneral || defender.isSoldier;
-            }
-
-            // General (帥/將) special rule (cannot capture Soldier)
-            if (attacker.isGeneral && defender.isSoldier) {
-                return false;
-            }
-
-            // Standard capture based on rank
-            return attacker.rank >= defender.rank;
-        }
-
-        // Get legal moves for a selected piece for a given player and board state
-        function getLegalMovesForPlayer(boardState, pieceIndex, playerColor) {
-            const piece = getPiece(pieceIndex, boardState);
-            if (!piece || piece.color !== playerColor || !piece.revealed) {
-                return []; 
-            }
-
-            const { row, col } = getCoords(pieceIndex);
+        function getValidMovesForPiece(piece, board) {
             const moves = [];
-
-            const directions = [
-                { dr: -1, dc: 0 }, { dr: 1, dc: 0 }, // Vertical
-                { dr: 0, dc: -1 }, { dr: 0, dc: 1 }  // Horizontal
-            ];
-
-            for (const dir of directions) {
-                if (piece.isCannon) {
-                    let pivotFound = false;
-                    
-                    let checkRow = row + dir.dr;
-                    let checkCol = col + dir.dc;
-                    const adjacentIndex = getIndex(checkRow, checkCol);
-                    const adjacentPiece = getPiece(adjacentIndex, boardState);
-
-                    // Cannon can move to adjacent empty square
-                    if (adjacentIndex !== -1 && !adjacentPiece) {
-                        moves.push(adjacentIndex);
-                    }
-
-                    // --- Cannon Capture Logic (jumping) ---
-                    // Reset checkRow/checkCol for jumping logic from the original piece position
-                    checkRow = row + dir.dr; 
-                    checkCol = col + dir.dc;
-
-                    // Traverse in one direction to find pivot
-                    while (getIndex(checkRow, checkCol) !== -1) {
-                        const currentCheckIndex = getIndex(checkRow, checkCol);
-                        const pieceInPath = getPiece(currentCheckIndex, boardState);
-
-                        if (!pivotFound) { // Still searching for the pivot
-                            if (pieceInPath !== null) { // Found the pivot piece (can be hidden or revealed)
-                                pivotFound = true;
-                                // Continue to next square to search for the target
-                            }
-                        } else { // Pivot has been found, now looking for target
-                            if (pieceInPath !== null) { // Found a piece after the pivot
-                                // Target for cannon MUST be revealed, opponent's, and not another cannon
-                                if (pieceInPath.revealed && pieceInPath.color !== playerColor && !pieceInPath.isCannon) {
-                                    moves.push(currentCheckIndex);
-                                }
-                                break; // Stop after finding the first piece (target or blocker) after pivot
-                            }
-                            // If pieceInPath is null, it means the square is empty, continue searching for target
-                        }
-                        checkRow += dir.dr;
-                        checkCol += dir.dc;
-                    }
-                } else {
-                    // For standard pieces (move/capture one square)
-                    const targetRow = row + dir.dr;
-                    const targetCol = col + dir.dc;
-                    const targetIndex = getIndex(targetRow, targetCol);
-
-                    if (targetIndex !== -1) { // If target is on board
-                        const targetPiece = getPiece(targetIndex, boardState);
-                        if (!targetPiece) { // Empty square - valid move
-                            moves.push(targetIndex);
-                        } else if (canCapture(piece, targetPiece)) { // Can capture opponent's piece (checked for .revealed inside canCapture)
-                            moves.push(targetIndex);
-                        }
+            for (let toY = 0; toY < BOARD_HEIGHT; toY++) {
+                for (let toX = 0; toX < BOARD_WIDTH; toX++) {
+                    if (isValidMove(piece, toX, toY, board)) {
+                        moves.push({ toX, toY });
                     }
                 }
             }
             return moves;
         }
 
-        // Calculate material score for a given player based on revealed pieces
-        function calculateMaterialScore(playerColor) {
-            let score = 0;
-            for (const piece of board) {
-                if (piece && piece.revealed && piece.color === playerColor) {
-                    score += piece.score;
+        function handlePieceClick(e) {
+            if (typeof Tone !== 'undefined' && Tone.context.state !== 'running') {
+                Tone.start();
+            }
+
+            if (gameOver || !isPlayerTurn) return;
+            const targetEl = e.target.closest('.piece');
+            if (!targetEl) return;
+
+            const x = parseInt(targetEl.dataset.x);
+            const y = parseInt(targetEl.dataset.y);
+            const clickedPiece = boardState[y][x];
+
+            if (selectedPiece) {
+                if (isValidMove(selectedPiece, x, y, boardState)) {
+                    movePiece(selectedPiece, x, y);
+                } else {
+                    selectedPiece = null;
+                    clearHighlights();
+                    renderBoard();
+                }
+            } else {
+                if (!clickedPiece) return;
+                if (!clickedPiece.isFlipped) {
+                    flipPiece(clickedPiece);
+                } else if (clickedPiece.color === currentPlayer) {
+                    selectedPiece = clickedPiece;
+                    renderBoard();
+                    const moves = getValidMovesForPiece(selectedPiece, boardState);
+                    highlightMoves(moves);
                 }
             }
+        }
+
+        function performMove(piece, toX, toY, currentBoard, isSimulation = false) {
+            const fromX = piece.x;
+            const fromY = piece.y;
+            const targetPiece = currentBoard[toY][toX];
+            
+            if (!isSimulation) {
+                if (targetPiece) { playSound('capture'); } 
+                else { playSound('move'); }
+            }
+
+            currentBoard[toY][toX] = { ...piece, x: toX, y: toY };
+            currentBoard[fromY][fromX] = null;
+        }
+
+        function flipPiece(piece) {
+            if (piece.isFlipped) return;
+            
+            if (firstMove) {
+                playerColor = piece.color;
+                aiColor = (playerColor === 'red') ? 'black' : 'red';
+                currentPlayer = piece.color;
+                firstMove = false;
+                statusEl.textContent = `您是${playerColor === 'red' ? '紅方' : '黑方'}。AI 即將行動。`;
+                playSound('flip');
+                piece.isFlipped = true;
+                renderBoard();
+                switchPlayer();
+            } else {
+                playSound('flip');
+                piece.isFlipped = true;
+                renderBoard();
+                switchPlayer();
+            }
+            
+            if (checkEndGame()) return;
+            if(!gameOver && currentPlayer === aiColor) triggerAIMove();
+        }
+
+        function movePiece(piece, toX, toY) {
+            performMove(piece, toX, toY, boardState, false);
+            selectedPiece = null;
+            clearHighlights();
+            renderBoard();
+            switchPlayer();
+            
+            if (checkEndGame()) return;
+            if(!gameOver && currentPlayer === aiColor) triggerAIMove();
+        }
+        
+        function switchPlayer() {
+            currentPlayer = (currentPlayer === 'red') ? 'black' : 'red';
+            isPlayerTurn = (currentPlayer === playerColor);
+            if (isPlayerTurn) {
+                statusEl.textContent = `輪到您 (${playerColor === 'red' ? '紅方' : '黑方'}) 行動`;
+            } else {
+                statusEl.textContent = `輪到 AI (${aiColor === 'red' ? '紅方' : '黑方'}) 思考中...`;
+            }
+        }
+        
+        function isValidMove(piece, toX, toY, board) {
+            const target = board[toY][toX];
+            // 規則：不能移動到未翻開的棋子上
+            if (target && !target.isFlipped) return false;
+            if (target && target.color === piece.color) return false;
+            
+            const dx = Math.abs(piece.x - toX);
+            const dy = Math.abs(piece.y - toY);
+
+            // 特殊規則優先
+            if (target) {
+                if (piece.name === '炮' || piece.name === '砲') {
+                    return isCannonJump(piece, target, board);
+                }
+                if (piece.name === '馬' || piece.name === '傌') {
+                    if ((dx === 1 && dy === 2) || (dx === 2 && dy === 1)) {
+                        const legX = piece.x + (dx === 2 ? (toX > piece.x ? 1 : -1) : 0);
+                        const legY = piece.y + (dy === 2 ? (toY > piece.y ? 1 : -1) : 0);
+                        if (!board[legY][legX]) return true;
+                    }
+                }
+                if ((piece.name === '車' || piece.name === '俥') && (dx === 0 || dy === 0)) {
+                    return getPiecesBetween(piece, target, board).length === 0;
+                }
+            }
+
+            // 一般移動/吃子規則
+            if (dx + dy !== 1) return false;
+
+            if (target) {
+                if (piece.name === '炮' || piece.name === '砲') return false;
+                if ((piece.rank === 1 && target.rank === 7)) return true;
+                if ((piece.rank === 7 && target.rank === 1)) return false;
+                return piece.rank >= target.rank;
+            }
+            
+            return true;
+        }
+
+        function isCannonJump(cannon, target, board) {
+            if (!target) return false;
+            return getPiecesBetween(cannon, target, board).length === 1;
+        }
+        
+        function getPiecesBetween(p1, p2, board) {
+            const pieces = [];
+            if (p1.x === p2.x) {
+                const startY = Math.min(p1.y, p2.y);
+                const endY = Math.max(p1.y, p2.y);
+                for (let y = startY + 1; y < endY; y++) {
+                    if (board[y][p1.x]) pieces.push(board[y][p1.x]);
+                }
+            } else if (p1.y === p2.y) {
+                const startX = Math.min(p1.x, p2.x);
+                const endX = Math.max(p1.x, p2.x);
+                for (let x = startX + 1; x < endX; x++) {
+                    if (board[p1.y][x]) pieces.push(board[p1.y][x]);
+                }
+            }
+            return pieces;
+        }
+
+        function checkEndGame() {
+            if (gameOver) return true;
+            const redPieces = [];
+            const blackPieces = [];
+
+            for(let y=0; y<BOARD_HEIGHT; y++) {
+                for(let x=0; x<BOARD_WIDTH; x++) {
+                    const piece = boardState[y][x];
+                    if (piece) {
+                        if (piece.color === 'red') redPieces.push(piece);
+                        else blackPieces.push(piece);
+                    }
+                }
+            }
+
+            if (redPieces.length === 0) {
+                endGame('黑方'); return true;
+            }
+            if (blackPieces.length === 0) {
+                endGame('紅方'); return true;
+            }
+
+            const currentPlayerMoves = getAllPossibleMoves(boardState, currentPlayer);
+            if (currentPlayerMoves.length === 0) {
+                const opponent = currentPlayer === 'red' ? '黑方' : '紅方';
+                endGame(opponent);
+                return true;
+            }
+            
+            return false;
+        }
+        
+        function endGame(winner, isDraw = false) {
+            gameOver = true;
+            if (isDraw) {
+                statusEl.textContent = '和局！雙方都無法行動。';
+            } else {
+                statusEl.textContent = `遊戲結束！${winner}獲勝！`;
+                const winnerColor = winner === '紅方' ? 'red' : 'black';
+                if (winnerColor === playerColor) {
+                    showVictoryModal();
+                } else {
+                    showDefeatModal();
+                }
+            }
+        }
+
+        function showVictoryModal() {
+            const victoryBox = victoryModal.querySelector('.modal-box');
+            victoryBox.innerHTML = '<h2>恭喜通關！</h2><p>您已成功擊敗對手！</p>'; // Reset content
+            
+            for (let i = 0; i < 100; i++) {
+                const confetti = document.createElement('div');
+                confetti.classList.add('confetti');
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.animationDelay = Math.random() * 5 + 's';
+                confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+                confetti.style.transform = `scale(${Math.random() * 0.5 + 0.5})`;
+                victoryBox.appendChild(confetti);
+            }
+            victoryModal.classList.add('show');
+        }
+
+        function showDefeatModal() {
+            defeatModal.classList.add('show');
+        }
+
+        function triggerAIMove() {
+            isPlayerTurn = false;
+            setTimeout(() => {
+                if (checkEndGame()) return;
+                
+                const bestMove = findBestMove();
+                if (bestMove) {
+                    if (bestMove.type === 'flip') {
+                        flipPiece(boardState[bestMove.y][bestMove.x]);
+                    } else if (bestMove.type === 'move') {
+                        movePiece(bestMove.piece, bestMove.toX, bestMove.toY);
+                    }
+                } else {
+                    console.error("AI has no moves, but checkEndGame failed. Forcing win for player.");
+                    endGame(playerColor === 'red' ? '紅方' : '黑方');
+                }
+            }, 500); // 縮短AI思考延遲
+        }
+
+        function findBestMove() {
+            let bestScore = -Infinity;
+            let bestMove = null;
+            const moves = getAllPossibleMoves(boardState, aiColor);
+
+            if (moves.length === 0) return null;
+
+            const moveActions = moves.filter(m => m.type === 'move');
+            if (moveActions.length === 0) {
+                const flipMoves = moves.filter(m => m.type === 'flip');
+                return flipMoves[Math.floor(Math.random() * flipMoves.length)];
+            }
+
+            for (const move of moves) {
+                const boardCopy = JSON.parse(JSON.stringify(boardState));
+                let score;
+                if (move.type === 'flip') {
+                    // 翻開中間的棋子有更高價值
+                    score = (move.x > 0 && move.x < 3) ? 5 : 1; 
+                } else {
+                    const pieceCopy = boardCopy[move.piece.y][move.piece.x];
+                    performMove(pieceCopy, move.toX, move.toY, boardCopy, true);
+                    score = minimax(boardCopy, AI_SEARCH_DEPTH - 1, false, -Infinity, Infinity);
+                }
+                 if (score > bestScore) {
+                    bestScore = score;
+                    bestMove = move;
+                }
+            }
+            return bestMove;
+        }
+
+        function minimax(board, depth, isMaximizing, alpha, beta) {
+            if (depth === 0) return evaluateBoard(board, isMaximizing);
+
+            const moves = getAllPossibleMoves(board, isMaximizing ? aiColor : playerColor).filter(m => m.type === 'move');
+            
+            // Move ordering: captures first
+            moves.sort((a, b) => {
+                const aIsCapture = board[a.toY][a.toX] !== null;
+                const bIsCapture = board[b.toY][b.toX] !== null;
+                if (aIsCapture && !bIsCapture) return -1;
+                if (!aIsCapture && bIsCapture) return 1;
+                return 0;
+            });
+
+            if (moves.length === 0) return evaluateBoard(board, isMaximizing);
+
+            if (isMaximizing) {
+                let maxEval = -Infinity;
+                for (const move of moves) {
+                    const boardCopy = JSON.parse(JSON.stringify(board));
+                    const pieceCopy = boardCopy[move.piece.y][move.piece.x];
+                    performMove(pieceCopy, move.toX, move.toY, boardCopy, true);
+                    const evaluation = minimax(boardCopy, depth - 1, false, alpha, beta);
+                    maxEval = Math.max(maxEval, evaluation);
+                    alpha = Math.max(alpha, evaluation);
+                    if (beta <= alpha) break;
+                }
+                return maxEval;
+            } else {
+                let minEval = Infinity;
+                for (const move of moves) {
+                    const boardCopy = JSON.parse(JSON.stringify(board));
+                    const pieceCopy = boardCopy[move.piece.y][move.piece.x];
+                    performMove(pieceCopy, move.toX, move.toY, boardCopy, true);
+                    const evaluation = minimax(boardCopy, depth - 1, true, alpha, beta);
+                    minEval = Math.min(minEval, evaluation);
+                    beta = Math.min(beta, evaluation);
+                    if (beta <= alpha) break;
+                }
+                return minEval;
+            }
+        }
+
+        function evaluateBoard(board) {
+            let score = 0;
+            let aiMobility = 0;
+            let playerMobility = 0;
+
+            for (let y = 0; y < BOARD_HEIGHT; y++) {
+                for (let x = 0; x < BOARD_WIDTH; x++) {
+                    const piece = board[y][x];
+                    if (piece && piece.isFlipped) {
+                        const value = pieceValues[piece.name];
+                        const positionBonus = (x > 0 && x < 3) ? 5 : 0; // 中央位置加分
+                        
+                        if (piece.color === aiColor) {
+                            score += value + positionBonus;
+                            aiMobility += getValidMovesForPiece(piece, board).length;
+                        } else {
+                            score -= (value + positionBonus);
+                            playerMobility += getValidMovesForPiece(piece, board).length;
+                        }
+                    }
+                }
+            }
+            // 棋子活性加權
+            score += (aiMobility - playerMobility) * 2;
             return score;
         }
 
-        // Generate a string representation of the current board state for history tracking
-        function getBoardStateString() {
-            // Include piece value, color, and revealed status, and current player
-            return JSON.stringify(board.map(p => p ? `${p.value}-${p.color}-${p.revealed}` : 'null')) + `|${currentPlayer}`;
-        }
-
-        // Render the board (updated to use piece-container for visuals)
-        function renderBoard() {
-            boardElement.innerHTML = ''; // Clear board
-            board.forEach((piece, index) => {
-                const cell = document.createElement('div');
-                cell.classList.add('cell');
-                cell.dataset.index = index;
-
-                // Add highlight for selected piece
-                if (index === selectedPieceIndex) {
-                    cell.classList.add('selected');
-                }
-
-                // Add highlight for legal moves
-                if (selectedPieceIndex !== null && getLegalMovesForPlayer(board, selectedPieceIndex, currentPlayer).includes(index)) {
-                    cell.classList.add('highlight');
-                }
-
-                if (piece) {
-                    const pieceContainer = document.createElement('div');
-                    pieceContainer.classList.add('piece-container');
-                    if (piece.revealed) {
-                        pieceContainer.textContent = piece.display;
-                        pieceContainer.classList.add(`${piece.color}-piece`); // Apply color class
-                    } else {
-                        cell.classList.add('facedown'); // Just facedown class on cell
+        function getAllPossibleMoves(board, color) {
+            const moves = [];
+            for (let y = 0; y < BOARD_HEIGHT; y++) {
+                for (let x = 0; x < BOARD_WIDTH; x++) {
+                    const piece = board[y][x];
+                    if (piece && piece.isFlipped && piece.color === color) {
+                        const validPieceMoves = getValidMovesForPiece(piece, board);
+                        validPieceMoves.forEach(move => {
+                            moves.push({ type: 'move', piece: piece, toX: move.toX, toY: move.toY });
+                        });
                     }
-                    cell.appendChild(pieceContainer);
                 }
-                boardElement.appendChild(cell);
-            });
-            updateStatus();
-        }
-
-        // Update game status message (all English)
-        function updateStatus() {
-            if (gameOver) {
-                // Message set by checkGameOver or handleDrawResponse
-                return;
             }
-            if (drawOfferPending) {
-                statusMessageElement.textContent = `${drawOfferedBy.charAt(0).toUpperCase() + drawOfferedBy.slice(1)} offered a draw. Accept or Decline?`;
-                return;
-            }
-            // MODIFIED LOGIC FOR VS COMPUTER MODE
-            if (gameMode === 'vs-computer') {
-                if (currentPlayer === 'red') {
-                    statusMessageElement.textContent = "現在是您的回合。"; // It's Your turn
-                } else {
-                    statusMessageElement.textContent = "現在是 AI 的回合。"; // It is AI's turn
+            for (let y = 0; y < BOARD_HEIGHT; y++) {
+                for (let x = 0; x < BOARD_WIDTH; x++) {
+                    const piece = board[y][x];
+                    if (piece && !piece.isFlipped) {
+                        moves.push({ type: 'flip', x, y });
+                    }
                 }
-            } else { // Two players mode
-                // MODIFIED FOR A/B PLAYER NAMES
-                statusMessageElement.textContent = `現在是 ${currentPlayer === 'red' ? 'A方' : 'B方'} 的回合。`; // It's A's/B's turn.
             }
+            return moves;
         }
 
-        // Switch player turn and handle AI if applicable with a delay
-        function switchPlayer() {
-            // Record state for threefold repetition BEFORE switching player
-            const currentStateString = getBoardStateString();
-            gameHistory.push(currentStateString);
-
-            // Apply delay before switching player
-            setTimeout(() => {
-                currentPlayer = currentPlayer === 'red' ? 'black' : 'red';
-                selectedPieceIndex = null; // Deselect piece
-                renderBoard(); // Re-render to clear highlights and update status
-
-                // Check for threefold repetition automatically when AI's turn starts
-                if (gameMode === 'vs-computer' && currentPlayer === 'black') {
-                     if (checkThreefoldRepetition()) {
-                        offerDraw(); // AI offers draw
-                        return; // AI waits for human response
-                     }
-                    // A small delay to make it feel like the computer is "thinking"
-                    setTimeout(computerTurn, TURN_DELAY); 
-                }
-            }, TURN_DELAY); // Delay applies here
-        }
-
-        // --- Draw Logic ---
-        function offerDraw() {
-            if (gameOver || drawOfferPending) return;
-
-            drawOfferedBy = currentPlayer;
-            drawOfferPending = true;
-            updateStatus();
-            drawOfferResponseControls.style.display = 'flex'; // Show accept/decline buttons
-            drawButton.disabled = true; // Disable draw button once offered
-
-            if (gameMode === 'vs-computer' && drawOfferedBy === 'red') { // Human offered draw to AI
-                setTimeout(aiRespondToDrawOffer, TURN_DELAY * 2); // Give human time to see the offer
-            }
-        }
-
-        function handleDrawResponse(accept) {
-            if (!drawOfferPending) return;
-
-            drawOfferPending = false;
-            drawOfferedBy = null;
-            drawOfferResponseControls.style.display = 'none'; // Hide buttons
-            drawButton.disabled = false; // Re-enable draw button
-
-            if (accept) {
-                gameOver = true;
-                statusMessageElement.textContent = "遊戲因雙方同意而平局！"; // Game is a draw by mutual agreement!
+        boardEl.addEventListener('click', handlePieceClick);
+        
+        restartBtn.addEventListener('click', () => {
+             if (typeof Tone !== 'undefined' && Tone.context.state !== 'running') {
+                Tone.start().then(initGame);
             } else {
-                statusMessageElement.textContent = `${(currentPlayer === 'red' ? '黑方' : '紅方')} 拒絕了和局請求。遊戲繼續。`; // (Black/Red) declined the draw offer. Game continues.
-                updateStatus(); // Update status message to current player's turn
+                initGame();
             }
-        }
-
-        function checkThreefoldRepetition() {
-            const currentState = getBoardStateString();
-            let count = 0;
-            for (const state of gameHistory) {
-                if (state === currentState) {
-                    count++;
-                }
-            }
-            return count >= THREEFOLD_REPETITION_COUNT;
-        }
-
-        // --- AI Draw Decision Logic ---
-        function aiRespondToDrawOffer() {
-            if (!drawOfferPending || drawOfferedBy !== 'red') return; // Ensure offer is pending and from human
-
-            // Rule 2: Threefold repetition - AI always accepts
-            if (checkThreefoldRepetition()) {
-                handleDrawResponse(true); // AI accepts
-                return;
-            }
-
-            const redScore = calculateMaterialScore('red');
-            const blackScore = calculateMaterialScore('black');
-
-            // Check if AI (Black) has any revealed moves
-            let blackHasRevealedMoves = false;
-            for (let i = 0; i < BOARD_SIZE; i++) {
-                const piece = getPiece(i);
-                if (piece && piece.revealed && piece.color === 'black') {
-                    if (getLegalMovesForPlayer(board, i, 'black').length > 0) {
-                        blackHasRevealedMoves = true;
-                        break;
-                    }
-                }
-            }
-
-            const scoreDifference = blackScore - redScore; // Positive if Black is ahead, negative if Red is ahead
-
-            // AI thinks it will win: Significant material advantage AND can move
-            // Thresholds are arbitrary but reflect 'significant' advantage
-            if (scoreDifference > 50 && blackHasRevealedMoves) { // Black has a significant material advantage (e.g., more than a Chariot)
-                handleDrawResponse(false); // AI declines, it thinks it will win
-                return;
-            }
-
-            // AI thinks it will lose or game will not end (AI stuck): Significant material disadvantage OR no legal moves for its revealed pieces
-            if (scoreDifference < -30 || !blackHasRevealedMoves) { // Black is significantly behind OR stuck with revealed pieces
-                handleDrawResponse(true); // AI accepts, it thinks it will lose or can't win
-                return;
-            }
-            
-            // In balanced situations, check for immediate capture opportunities for AI
-            let hasImmediateCaptureForAI = false;
-            for (let i = 0; i < BOARD_SIZE; i++) {
-                const piece = getPiece(i);
-                if (piece && piece.revealed && piece.color === 'black') {
-                    const legalMoves = getLegalMovesForPlayer(board, i, 'black');
-                    const captureMoves = legalMoves.filter(moveIndex => {
-                        const targetPiece = getPiece(moveIndex);
-                        return targetPiece !== null && targetPiece.revealed && targetPiece.color === 'red'; // Capture opponent's revealed piece
-                    });
-                    if (captureMoves.length > 0) {
-                        hasImmediateCaptureForAI = true;
-                        break;
-                    }
-                }
-            }
-
-            if (hasImmediateCaptureForAI) {
-                handleDrawResponse(false); // AI declines
-            } else {
-                // Default for closer games or if AI cannot find strong moves
-                handleDrawResponse(true); // AI accepts, "game will not end" or "AI will lose" if no clear path to victory
-            }
-        }
-
-
-        // --- Smarter Basic Computer AI Logic (modified to consider offering draw) ---
-        function computerTurn() {
-            if (gameOver || currentPlayer !== 'black') return; // Ensure it's still computer's turn and game is not over
-            if (drawOfferPending) return; // Don't move if a draw offer is pending (human decision)
-
-            // AI (Black) checks if it should offer a draw due to threefold repetition
-            // This is now handled in switchPlayer right before AI's turn
-            
-            let actionTaken = false;
-            let bestCapture = null; 
-
-            // Step 1: Prioritize Captures - Find the best capture (highest rank captured)
-            for (let i = 0; i < BOARD_SIZE; i++) {
-                const piece = getPiece(i);
-                if (piece && piece.revealed && piece.color === 'black') {
-                    const legalMoves = getLegalMovesForPlayer(board, i, 'black'); // Use AI's perspective
-                    // Filter for actual capture moves where the target piece is revealed
-                    const captureMoves = legalMoves.filter(moveIndex => {
-                        const targetPiece = getPiece(moveIndex);
-                        return targetPiece !== null && targetPiece.revealed && targetPiece.color === 'red';
-                    });
-
-                    for (const targetIndex of captureMoves) {
-                        const capturedPiece = getPiece(targetIndex);
-                        if (capturedPiece) { 
-                            if (!bestCapture || capturedPiece.rank > bestCapture.capturedPieceRank) {
-                                bestCapture = { pieceIndex: i, targetIndex: targetIndex, capturedPieceRank: capturedPiece.rank };
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (bestCapture) {
-                // Execute the best capture
-                const pieceToMove = getPiece(bestCapture.pieceIndex);
-                const targetPiece = getPiece(bestCapture.targetIndex);
-
-                board[bestCapture.targetIndex] = pieceToMove; // Move piece
-                board[bestCapture.pieceIndex] = null; // Clear old position
-
-                statusMessageElement.textContent = `黑方的 ${pieceToMove.display} 吃掉了紅方的 ${targetPiece.display}！`; // Black's [piece] captured Red's [piece]!
-                actionTaken = true;
-            }
-
-            // Step 2: If no captures, try to reveal a facedown piece
-            if (!actionTaken) {
-                const facedownPiecesIndices = board.map((p, idx) => (p && !p.revealed && p.color === 'black' ? idx : -1)).filter(idx => idx !== -1);
-                if (facedownPiecesIndices.length > 0) {
-                    const randomIndex = facedownPiecesIndices[Math.floor(Math.random() * facedownPiecesIndices.length)];
-                    const pieceToReveal = getPiece(randomIndex);
-                    pieceToReveal.revealed = true;
-                    statusMessageElement.textContent = `黑方翻開了一顆棋子。`; // Black revealed a piece.
-                    actionTaken = true;
-                }
-            }
-            
-            // Step 3: If no captures and no facedown pieces to reveal, just move a random revealed piece
-            if (!actionTaken) {
-                const revealedPiecesWithMoves = [];
-                for (let i = 0; i < BOARD_SIZE; i++) {
-                    const piece = getPiece(i);
-                    if (piece && piece.revealed && piece.color === 'black') {
-                        const moves = getLegalMovesForPlayer(board, i, 'black'); // Use AI's perspective
-                        // Filter out moves that are captures (already handled in Step 1)
-                        const nonCaptureMoves = moves.filter(moveIndex => getPiece(moveIndex) === null);
-                        if (nonCaptureMoves.length > 0) { // Only consider non-capture moves for this step
-                            revealedPiecesWithMoves.push({ index: i, moves: nonCaptureMoves });
-                        }
-                    }
-                }
-
-                if (revealedPiecesWithMoves.length > 0) {
-                    const randomPieceEntry = revealedPiecesWithMoves[Math.floor(Math.random() * revealedPiecesWithMoves.length)];
-                    const pieceIndex = randomPieceEntry.index;
-                    const possibleMoves = randomPieceEntry.moves;
-                    const targetIndex = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
-
-                    const pieceToMove = getPiece(pieceIndex);
-                    board[targetIndex] = pieceToMove;
-                    board[pieceIndex] = null;
-                    statusMessageElement.textContent = `黑方的 ${pieceToMove.display} 移動了。`; // Black's [piece] moved.
-                    actionTaken = true;
-                }
-            }
-
-            // After computer's move, check for game over and switch turn
-            renderBoard(); // Render the board with the computer's move
-            if (checkGameOver()) {
-                updateStatus();
-            } else {
-                switchPlayer(); // Switch back to human player
-            }
-        }
-
-
-        // Check for game over condition
-        function checkGameOver() {
-            // Check if one side has no pieces left (all pieces captured, revealed or not)
-            const redPiecesOnBoard = board.filter(p => p && p.color === 'red').length;
-            const blackPiecesOnBoard = board.filter(p => p && p.color === 'black').length;
-
-            if (redPiecesOnBoard === 0) {
-                statusMessageElement.textContent = `遊戲結束！黑方獲勝，因為紅方所有棋子已被吃光！`; // Game Over! Black wins by eliminating all Red pieces!
-                gameOver = true;
-                return true;
-            }
-            if (blackPiecesOnBoard === 0) {
-                statusMessageElement.textContent = `遊戲結束！紅方獲勝，因為黑方所有棋子已被吃光！`; // Game Over! Red wins by eliminating all Black pieces!
-                gameOver = true;
-                return true;
-            }
-
-            // Check if current player has any legal action (move, capture, or reveal)
-            let hasLegalAction = false;
-            for (let i = 0; i < BOARD_SIZE; i++) {
-                const piece = getPiece(i);
-                if (piece && piece.color === currentPlayer) { // Check pieces of current player's color
-                    if (!piece.revealed) { // Can reveal a facedown piece
-                        hasLegalAction = true;
-                        break;
-                    } else { // Can move a revealed piece
-                        if (getLegalMovesForPlayer(board, i, currentPlayer).length > 0) { // Use helper
-                            hasLegalAction = true;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (!hasLegalAction) { // If NO legal action is found for the current player
-                statusMessageElement.textContent = `遊戲結束！${currentPlayer === 'red' ? '紅方' : '黑方'} 沒有合法走法。${currentPlayer === 'red' ? '黑方' : '紅方'} 獲勝！`; // Game Over! [Player] has no legal moves. [Opponent] wins!
-                gameOver = true;
-                return true;
-            }
-
-            return false;
-        }
-
-
-        // --- Event Handlers ---
-        function handleCellClick(event) {
-            if (gameOver || drawOfferPending) return; // Cannot play if game is over or draw offered
-            if (gameMode === 'vs-computer' && currentPlayer === 'black') return; // Prevent human input during computer's turn
-
-            // Ensure we get the cell element, even if a child (like pieceDiv) was clicked
-            const cellElement = event.target.closest('.cell');
-            if (!cellElement) return; // Not a cell click
-
-            const clickedIndex = parseInt(cellElement.dataset.index);
-            const clickedPiece = getPiece(clickedIndex);
-
-            // If a piece is already selected
-            if (selectedPieceIndex !== null) {
-                const selectedPiece = getPiece(selectedPieceIndex);
-                const legalMoves = getLegalMovesForPlayer(board, selectedPieceIndex, currentPlayer); // Use helper
-
-                // If clicked the same piece, deselect it
-                if (clickedIndex === selectedPieceIndex) {
-                    selectedPieceIndex = null;
-                    renderBoard(); // Re-render to remove highlights
-                    return;
-                }
-
-                // If clicked a highlighted square (valid move or capture)
-                if (legalMoves.includes(clickedIndex)) {
-                    // Perform move or capture
-                    const targetPiece = getPiece(clickedIndex); // Piece at target destination
-
-                    board[clickedIndex] = selectedPiece; // Move selected piece to target
-                    board[selectedPieceIndex] = null; // Clear old position
-
-                    if (targetPiece) { // It was a capture
-                        statusMessageElement.textContent = `${selectedPiece.display} captured ${targetPiece.display}!`;
-                    } else { // It was a move to an empty square
-                        statusMessageElement.textContent = `${selectedPiece.display} moved.`;
-                    }
-
-                    if (checkGameOver()) { // Check for game over after move
-                        updateStatus();
-                    } else {
-                        switchPlayer(); // Switch turn
-                    }
-                } else {
-                    // Clicked an invalid square (not highlighted) or opponent's piece (not highlightable)
-                    // Deselect the previously selected piece and clear highlights
-                    selectedPieceIndex = null;
-                    renderBoard();
-                }
-            } else { // No piece selected yet
-                if (clickedPiece) { // Clicked on a piece
-                    if (!clickedPiece.revealed) {
-                        // Reveal facedown piece
-                        clickedPiece.revealed = true;
-                        renderBoard(); // Update display immediately after reveal
-                        if (checkGameOver()) { // Check for game over after revealing
-                            updateStatus();
-                        } else {
-                            switchPlayer(); 
-                        }
-                    } else if (clickedPiece.color === currentPlayer) {
-                        // Select friendly revealed piece
-                        selectedPieceIndex = clickedIndex;
-                        renderBoard(); // Re-render to apply 'selected' class and highlight moves
-                    } else {
-                        // Clicked opponent's revealed piece without selecting own
-                        statusMessageElement.textContent = `現在是 ${currentPlayer === 'red' ? 'A方' : 'B方'} 的回合。請選擇您自己的棋子。`; // It's A's/B's turn. Select your own piece.
-                    }
-                }
-            }
-        }
-
-        // Initialize or reset the game
-        function initializeGame() {
-            gameOver = false;
-            currentPlayer = 'red'; // Always start with red player
-            selectedPieceIndex = null;
-            gameHistory = []; // Reset game history for new game
-            drawOfferedBy = null;
-            drawOfferPending = false;
-            drawOfferResponseControls.style.display = 'none';
-            drawButton.disabled = false; // Ensure draw button is enabled at start
-
-            // Hide player selection and show game elements
-            playerSelectOverlay.style.display = 'none';
-            boardElement.style.display = 'grid'; // Ensure board is visible
-            document.querySelector('.controls').style.display = 'flex'; // Ensure controls are visible
-
-
-            // Create initial set of pieces (all facedown)
-            let initialPieces = [];
-            allRedPieces.forEach(p => initialPieces.push({ ...p, revealed: false }));
-            allBlackPieces.forEach(p => initialPieces.push({ ...p, revealed: false }));
-
-            // Shuffle and place on board
-            shuffleArray(initialPieces);
-            board = initialPieces; // Assign shuffled pieces directly to board
-
-            renderBoard(); // Render initial board and status
-        }
-
-        // Function to show player selection screen
-        function showPlayerSelect() {
-            playerSelectOverlay.style.display = 'block'; // Show player selection
-            boardElement.style.display = 'none'; // Hide board
-            document.querySelector('.controls').style.display = 'none'; // Hide controls
-            statusMessageElement.textContent = "歡迎來到暗棋！請選擇遊戲模式。"; // MODIFIED: Welcome to Banqi! Choose game mode.
-            gameOver = false; // Reset game state
-            drawOfferPending = false;
-            drawOfferedBy = null;
-            drawOfferResponseControls.style.display = 'none';
-            drawButton.disabled = false; // Ensure draw button is enabled
-        }
-
-
-        // --- Event Listeners ---
-        boardElement.addEventListener('click', handleCellClick); // Attach directly to board, use event delegation
-        resetButton.addEventListener('click', showPlayerSelect); // Reset button now goes to select screen
-        drawButton.addEventListener('click', offerDraw); // New event listener for draw button
-
-        acceptDrawButton.addEventListener('click', () => handleDrawResponse(true));
-        declineDrawButton.addEventListener('click', () => handleDrawResponse(false));
-
-        twoPlayersButton.addEventListener('click', () => {
-            gameMode = 'two-players';
-            initializeGame();
         });
+        victoryModal.addEventListener('click', () => victoryModal.classList.remove('show'));
+        defeatModal.addEventListener('click', () => defeatModal.classList.remove('show'));
 
-        vsComputerButton.addEventListener('click', () => {
-            gameMode = 'vs-computer';
-            initializeGame();
-            // If computer is black and red (human) starts, computer will play on black's turn
-            // If the first piece revealed is black, computer will take the first turn.
-            // No need to explicitly call computerTurn here, it's handled by switchPlayer
-        });
-
-        // --- Initial Game Start ---
-        window.onload = showPlayerSelect; // Show player selection first
+        setupSounds();
+        initGame();
     </script>
+
 </body>
 </html>
