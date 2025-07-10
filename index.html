@@ -19,6 +19,7 @@
             --black-text: #2d2d2d;
             --selected-glow: #f7b733;
             --hint-color: rgba(10, 132, 38, 0.5);
+            --ai-move-glow: #4ade80; /* 亮綠色 */
             --font-family-status: 'Noto Serif TC', serif;
             --font-family-piece: 'Ma Shan Zheng', cursive;
         }
@@ -29,7 +30,7 @@
             background-image: url('https://www.transparenttextures.com/patterns/wood-pattern.png');
             background-size: cover;
             background-position: center;
-            overflow-y: auto;
+            overflow: hidden; /* 防止動畫元素超出畫面 */
         }
 
         .game-screen {
@@ -197,6 +198,15 @@
             box-shadow: 0 0 25px 8px var(--selected-glow), inset 0 -3px 5px rgba(0,0,0,0.1);
             transform: scale(1.08);
         }
+        
+        .ai-move-highlight {
+            animation: ai-glow 1.5s infinite ease-in-out;
+        }
+
+        @keyframes ai-glow {
+            0%, 100% { box-shadow: 0 0 15px 5px var(--ai-move-glow), inset 0 -3px 5px rgba(0,0,0,0.1); }
+            50% { box-shadow: 0 0 25px 10px var(--ai-move-glow), inset 0 -3px 5px rgba(0,0,0,0.1); }
+        }
 
         .hint::after {
             content: '';
@@ -277,7 +287,7 @@
             transform: scale(0.7);
             transition: transform 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28);
             position: relative;
-            overflow: hidden;
+            background: transparent;
         }
         .modal.show .modal-box {
             transform: scale(1);
@@ -287,34 +297,62 @@
             font-size: 3.5rem;
             font-weight: bold;
             margin-bottom: 1rem;
+            position: relative;
+            z-index: 10;
         }
         .modal-box p {
             font-size: 1.5rem;
+            position: relative;
+            z-index: 10;
         }
         
         #victory-modal .modal-box {
-             background: linear-gradient(135deg, #fdfcfb, #e2d1c3);
-             color: var(--board-border);
-        }
-        .confetti {
-            position: absolute;
-            width: 10px;
-            height: 20px;
-            background-color: #f00;
-            top: -50px;
-            opacity: 0;
-            animation: fall 5s linear infinite;
-        }
-        @keyframes fall {
-            to {
-                transform: translateY(120vh) rotate(360deg);
-                opacity: 1;
-            }
+             color: #fff;
+             text-shadow: 0 0 10px #ffc107;
         }
         
         #defeat-modal .modal-box {
-            background: linear-gradient(135deg, #6c757d, #495057);
             color: #f8f9fa;
+            text-shadow: 0 0 8px #000;
+        }
+        
+        .animation-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 5;
+        }
+
+        .firework {
+            position: absolute;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            opacity: 1;
+            animation: firework-explode 1.2s cubic-bezier(.25,1,.5,1) forwards;
+        }
+
+        @keyframes firework-explode {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-100px) scale(15); opacity: 0; }
+        }
+        
+        .leaf {
+            position: absolute;
+            width: 25px;
+            height: 15px;
+            background-color: #8B4513;
+            border-radius: 5px 50% 5px 50%;
+            opacity: 0.7;
+            animation: fall-and-sway 4s linear infinite;
+        }
+
+        @keyframes fall-and-sway {
+            from { transform: translateY(-10vh) translateX(0) rotate(0deg); }
+            to { transform: translateY(110vh) translateX(100px) rotate(720deg); }
         }
 
     </style>
@@ -341,6 +379,7 @@
 
     <div id="victory-modal" class="modal">
         <div class="modal-box">
+            <div class="animation-container" id="fireworks-container"></div>
             <h2>恭喜通關！</h2>
             <p>您已成功擊敗對手！</p>
         </div>
@@ -348,6 +387,7 @@
 
     <div id="defeat-modal" class="modal">
         <div class="modal-box">
+            <div class="animation-container" id="wind-container"></div>
             <h2>再接再厲！</h2>
             <p>失敗乃成功之母，東山再起！</p>
         </div>
@@ -366,7 +406,7 @@
 
         const BOARD_WIDTH = 4;
         const BOARD_HEIGHT = 8;
-        const AI_TIME_LIMIT = 4500; // AI 思考時間限制 (毫秒)
+        const AI_TIME_LIMIT = 4500;
 
         const PIECE_CONFIG = {
             'k': { rank: 7, name: '將' }, 'g': { rank: 7, name: '帥' },
@@ -378,24 +418,20 @@
             'p': { rank: 1, name: '卒' }, 's': { rank: 1, 'name': '兵' }
         };
         
-        const pieceValues = { '帥': 10000, '將': 10000, '仕': 120, '士': 120, '相': 120, '象': 120, '俥': 500, '車': 500, '傌': 300, '馬': 300, '砲': 320, '炮': 320, '兵': 80, '卒': 80 };
+        // 根據新規則調整棋子價值
+        const pieceValues = { 
+            '帥': 10000, '將': 10000, 
+            '仕': 120, '士': 120, 
+            '相': 120, '象': 120, 
+            '俥': 600, '車': 600, // 提升價值
+            '傌': 350, '馬': 350, // 提升價值
+            '砲': 450, '炮': 450, // 提升價值
+            '兵': 80, '卒': 80 
+        };
 
         const PIECES = [
-            { id: 'g1', color: 'red', ...PIECE_CONFIG['g'] },
-            { id: 'd1', color: 'red', ...PIECE_CONFIG['d'] }, { id: 'd2', color: 'red', ...PIECE_CONFIG['d'] },
-            { id: 'h1', color: 'red', ...PIECE_CONFIG['h'] }, { id: 'h2', color: 'red', ...PIECE_CONFIG['h'] },
-            { id: 't1', color: 'red', ...PIECE_CONFIG['t'] }, { id: 't2', color: 'red', ...PIECE_CONFIG['t'] },
-            { id: 'n1', color: 'red', ...PIECE_CONFIG['n'] }, { id: 'n2', color: 'red', ...PIECE_CONFIG['n'] },
-            { id: 'x1', color: 'red', ...PIECE_CONFIG['x'] }, { id: 'x2', color: 'red', ...PIECE_CONFIG['x'] },
-            { id: 's1', color: 'red', ...PIECE_CONFIG['s'] }, { id: 's2', color: 'red', ...PIECE_CONFIG['s'] }, { id: 's3', color: 'red', ...PIECE_CONFIG['s'] }, { id: 's4', color: 'red', ...PIECE_CONFIG['s'] }, { id: 's5', color: 'red', ...PIECE_CONFIG['s'] },
-            
-            { id: 'k1', color: 'black', ...PIECE_CONFIG['k'] },
-            { id: 'a1', color: 'black', ...PIECE_CONFIG['a'] }, { id: 'a2', color: 'black', ...PIECE_CONFIG['a'] },
-            { id: 'e1', color: 'black', ...PIECE_CONFIG['e'] }, { id: 'e2', color: 'black', ...PIECE_CONFIG['e'] },
-            { id: 'r1', color: 'black', ...PIECE_CONFIG['r'] }, { id: 'r2', color: 'black', ...PIECE_CONFIG['r'] },
-            { id: 'm1', color: 'black', ...PIECE_CONFIG['m'] }, { id: 'm2', color: 'black', ...PIECE_CONFIG['m'] },
-            { id: 'c1', color: 'black', ...PIECE_CONFIG['c'] }, { id: 'c2', color: 'black', ...PIECE_CONFIG['c'] },
-            { id: 'p1', color: 'black', ...PIECE_CONFIG['p'] }, { id: 'p2', color: 'black', ...PIECE_CONFIG['p'] }, { id: 'p3', color: 'black', ...PIECE_CONFIG['p'] }, { id: 'p4', color: 'black', ...PIECE_CONFIG['p'] }, { id: 'p5', color: 'black', ...PIECE_CONFIG['p'] },
+            { id: 'g1', color: 'red', ...PIECE_CONFIG['g'] }, { id: 'd1', color: 'red', ...PIECE_CONFIG['d'] }, { id: 'd2', color: 'red', ...PIECE_CONFIG['d'] }, { id: 'h1', color: 'red', ...PIECE_CONFIG['h'] }, { id: 'h2', color: 'red', ...PIECE_CONFIG['h'] }, { id: 't1', color: 'red', ...PIECE_CONFIG['t'] }, { id: 't2', color: 'red', ...PIECE_CONFIG['t'] }, { id: 'n1', color: 'red', ...PIECE_CONFIG['n'] }, { id: 'n2', color: 'red', ...PIECE_CONFIG['n'] }, { id: 'x1', color: 'red', ...PIECE_CONFIG['x'] }, { id: 'x2', color: 'red', ...PIECE_CONFIG['x'] }, { id: 's1', color: 'red', ...PIECE_CONFIG['s'] }, { id: 's2', color: 'red', ...PIECE_CONFIG['s'] }, { id: 's3', color: 'red', ...PIECE_CONFIG['s'] }, { id: 's4', color: 'red', ...PIECE_CONFIG['s'] }, { id: 's5', color: 'red', ...PIECE_CONFIG['s'] },
+            { id: 'k1', color: 'black', ...PIECE_CONFIG['k'] }, { id: 'a1', color: 'black', ...PIECE_CONFIG['a'] }, { id: 'a2', color: 'black', ...PIECE_CONFIG['a'] }, { id: 'e1', color: 'black', ...PIECE_CONFIG['e'] }, { id: 'e2', color: 'black', ...PIECE_CONFIG['e'] }, { id: 'r1', color: 'black', ...PIECE_CONFIG['r'] }, { id: 'r2', color: 'black', ...PIECE_CONFIG['r'] }, { id: 'm1', color: 'black', ...PIECE_CONFIG['m'] }, { id: 'm2', color: 'black', ...PIECE_CONFIG['m'] }, { id: 'c1', color: 'black', ...PIECE_CONFIG['c'] }, { id: 'c2', color: 'black', ...PIECE_CONFIG['c'] }, { id: 'p1', color: 'black', ...PIECE_CONFIG['p'] }, { id: 'p2', color: 'black', ...PIECE_CONFIG['p'] }, { id: 'p3', color: 'black', ...PIECE_CONFIG['p'] }, { id: 'p4', color: 'black', ...PIECE_CONFIG['p'] }, { id: 'p5', color: 'black', ...PIECE_CONFIG['p'] },
         ];
         
         let boardState = [];
@@ -406,7 +442,9 @@
         let firstMove = true;
         let gameOver = false;
         let isPlayerTurn = true;
-        let difficulty = 'novice'; // 'novice' or 'master'
+        let difficulty = 'novice';
+        let lastAiMoveEl = null;
+        let animationInterval = null;
 
         let flipSound, moveSound, captureSound;
         
@@ -442,8 +480,7 @@
             selectedPiece = null;
             isPlayerTurn = true;
             statusEl.textContent = `歡迎來到藍氏暗棋！點擊棋子開始。(${difficulty === 'novice' ? '新手' : '高手'}模式)`;
-            victoryModal.classList.remove('show');
-            defeatModal.classList.remove('show');
+            closeAllModals();
             
             let shuffledPieces = [...PIECES].sort(() => Math.random() - 0.5);
             boardState = [];
@@ -494,6 +531,25 @@
                 }
             }
         }
+        
+        function getValidMovesForPiece(piece, board) {
+            const moves = [];
+            for (let toY = 0; toY < BOARD_HEIGHT; toY++) {
+                for (let toX = 0; toX < BOARD_WIDTH; toX++) {
+                    if (isValidMove(piece, toX, toY, board)) {
+                        moves.push({ toX, toY });
+                    }
+                }
+            }
+            return moves;
+        }
+
+        function removeAiHighlight() {
+            if (lastAiMoveEl) {
+                lastAiMoveEl.classList.remove('ai-move-highlight');
+                lastAiMoveEl = null;
+            }
+        }
 
         function clearHighlights() {
             document.querySelectorAll('.hint').forEach(el => el.classList.remove('hint'));
@@ -508,24 +564,15 @@
             });
         }
 
-        function getValidMovesForPiece(piece, board) {
-            const moves = [];
-            for (let toY = 0; toY < BOARD_HEIGHT; toY++) {
-                for (let toX = 0; toX < BOARD_WIDTH; toX++) {
-                    if (isValidMove(piece, toX, toY, board)) {
-                        moves.push({ toX, toY });
-                    }
-                }
-            }
-            return moves;
-        }
-
         function handlePieceClick(e) {
             if (typeof Tone !== 'undefined' && Tone.context.state !== 'running') {
                 Tone.start();
             }
 
             if (gameOver || !isPlayerTurn) return;
+            
+            removeAiHighlight();
+
             const targetEl = e.target.closest('.piece');
             if (!targetEl) return;
 
@@ -613,52 +660,86 @@
             }
         }
         
+        // =======================================================
+        // 主要規則更新函式
+        // =======================================================
         function isValidMove(piece, toX, toY, board) {
             const target = board[toY][toX];
+            const fromX = piece.x;
+            const fromY = piece.y;
+            const dx = Math.abs(fromX - toX);
+            const dy = Math.abs(fromY - toY);
+
+            // 通用規則：不能吃未翻開的或己方棋子
             if (target && !target.isFlipped) return false;
             if (target && target.color === piece.color) return false;
-            
-            const dx = Math.abs(piece.x - toX);
-            const dy = Math.abs(piece.y - toY);
 
-            // 炮/砲的特殊吃子規則
-            if (target && (piece.name === '炮' || piece.name === '砲')) {
-                return isCannonJump(piece, target, board);
+            // --- 特殊棋子規則 ---
+
+            // 馬 (Horse): 走日字，可越子
+            if (piece.name === '馬' || piece.name === '傌') {
+                if ((dx === 1 && dy === 2) || (dx === 2 && dy === 1)) {
+                    if (target) { // 吃子，採用標準大小規則
+                        if (piece.rank === 1 && target.rank === 7) return true;
+                        if (piece.rank === 7 && target.rank === 1) return false;
+                        return piece.rank >= target.rank;
+                    }
+                    return true; // 移動到空格
+                }
+                return false; // 如果不是日字走法，則無效
+            }
+
+            // 炮 (Cannon): 隔一子吃任意子 (除了炮)
+            if (piece.name === '炮' || piece.name === '砲') {
+                if (target) { // 必須是吃子
+                    if (getPiecesBetween(piece, {x: toX, y: toY}, board).length === 1) {
+                        // 新規則：可吃除了炮以外的任何棋子
+                        return target.name !== '炮' && target.name !== '砲';
+                    }
+                }
+                // 炮不能移動到空格，除非走一步
+                if (!target && dx + dy === 1) {
+                    return true;
+                }
+                return false;
+            }
+
+            // 車 (Chariot): 遠程吃任意子，或走一步
+            if (piece.name === '車' || piece.name === '俥') {
+                if (target && (dx === 0 || dy === 0)) { // 直線吃子
+                    if (getPiecesBetween(piece, {x: toX, y: toY}, board).length === 0) {
+                        // 新規則：可吃任意大小的棋子
+                        return true;
+                    }
+                }
+                // 走一步到空格
+                if (!target && dx + dy === 1) {
+                    return true;
+                }
+                return false;
+            }
+
+            // --- 其他棋子 (帥, 仕, 相, 兵) 的標準規則 ---
+            if (dx + dy !== 1) return false; // 只能走一步
+
+            if (target) { // 吃子
+                if (piece.rank === 1 && target.rank === 7) return true; // 兵吃將
+                if (piece.rank === 7 && target.rank === 1) return false; // 將不吃兵
+                return piece.rank >= target.rank; // 標準大小規則
             }
             
-            // 一般移動/吃子規則
-            if (dx + dy !== 1) return false;
-
-            if (target) {
-                // 炮/砲不能走一步吃子
-                if (piece.name === '炮' || piece.name === '砲') return false;
-                // 兵/卒可以吃將/帥
-                if ((piece.rank === 1 && target.rank === 7)) return true;
-                // 將/帥不能吃兵/卒
-                if ((piece.rank === 7 && target.rank === 1)) return false;
-                // 一般大吃小規則
-                return piece.rank >= target.rank;
-            }
-            
-            return true; // 空地移動
+            return true; // 移動到空格
         }
 
-        function isCannonJump(cannon, target, board) {
-            if (!target) return false; // 必須有目標才能跳
-            // 檢查中間隔了幾個棋子
-            const piecesBetween = getPiecesBetween(cannon, target, board);
-            return piecesBetween.length === 1;
-        }
-        
         function getPiecesBetween(p1, p2, board) {
             const pieces = [];
-            if (p1.x === p2.x) { // 垂直方向
+            if (p1.x === p2.x) { // 垂直
                 const startY = Math.min(p1.y, p2.y);
                 const endY = Math.max(p1.y, p2.y);
                 for (let y = startY + 1; y < endY; y++) {
                     if (board[y][p1.x]) pieces.push(board[y][p1.x]);
                 }
-            } else if (p1.y === p2.y) { // 水平方向
+            } else if (p1.y === p2.y) { // 水平
                 const startX = Math.min(p1.x, p2.x);
                 const endX = Math.max(p1.x, p2.x);
                 for (let x = startX + 1; x < endX; x++) {
@@ -670,34 +751,24 @@
 
         function checkEndGame() {
             if (gameOver) return true;
-            
-            // 遊戲尚未正式開始時（第一步棋還沒翻），不檢查勝負
             if (firstMove) return false;
 
             const redPieces = [];
             const blackPieces = [];
 
-            // 檢查勝負條件1：一方是否已沒有任何棋子
-            // 這裡必須計算所有棋子，無論是否已翻開
             for(let y=0; y<BOARD_HEIGHT; y++) {
                 for(let x=0; x<BOARD_WIDTH; x++) {
                     const piece = boardState[y][x];
-                    if (piece) { // <-- 修正點：移除 piece.isFlipped 判斷，計算所有棋子
+                    if (piece) {
                         if (piece.color === 'red') redPieces.push(piece);
                         else blackPieces.push(piece);
                     }
                 }
             }
 
-            if (redPieces.length === 0) {
-                endGame('黑方'); return true;
-            }
-            if (blackPieces.length === 0) {
-                endGame('紅方'); return true;
-            }
+            if (redPieces.length === 0) { endGame('黑方'); return true; }
+            if (blackPieces.length === 0) { endGame('紅方'); return true; }
 
-            // 檢查勝負條件2：當前玩家是否無任何可執行的動作
-            // (包含移動、吃子、翻棋)
             const currentPlayerMoves = getAllPossibleMoves(boardState, currentPlayer);
             if (currentPlayerMoves.length === 0) {
                 const opponent = currentPlayer === 'red' ? '黑方' : '紅方';
@@ -723,24 +794,59 @@
             }
         }
 
-        function showVictoryModal() {
-            const victoryBox = victoryModal.querySelector('.modal-box');
-            victoryBox.innerHTML = '<h2>恭喜通關！</h2><p>您已成功擊敗對手！</p>';
-            
-            for (let i = 0; i < 100; i++) {
-                const confetti = document.createElement('div');
-                confetti.classList.add('confetti');
-                confetti.style.left = Math.random() * 100 + 'vw';
-                confetti.style.animationDelay = Math.random() * 5 + 's';
-                confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
-                confetti.style.transform = `scale(${Math.random() * 0.5 + 0.5})`;
-                victoryBox.appendChild(confetti);
+        function closeAllModals() {
+            victoryModal.classList.remove('show');
+            defeatModal.classList.remove('show');
+            if (animationInterval) {
+                clearInterval(animationInterval);
+                animationInterval = null;
             }
+            document.getElementById('fireworks-container').innerHTML = '';
+            document.getElementById('wind-container').innerHTML = '';
+        }
+
+        function showVictoryModal() {
+            const container = document.getElementById('fireworks-container');
+            container.innerHTML = '';
             victoryModal.classList.add('show');
+            
+            animationInterval = setInterval(() => {
+                const firework = document.createElement('div');
+                firework.className = 'firework';
+                firework.style.left = `${Math.random() * 100}%`;
+                firework.style.top = `${Math.random() * 100}%`;
+                firework.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+                container.appendChild(firework);
+                
+                firework.addEventListener('animationend', () => {
+                    firework.remove();
+                });
+            }, 200);
+
+            setTimeout(() => {
+                if(animationInterval) clearInterval(animationInterval);
+                animationInterval = null;
+            }, 5000);
         }
 
         function showDefeatModal() {
+            const container = document.getElementById('wind-container');
+            container.innerHTML = '';
             defeatModal.classList.add('show');
+
+            for (let i = 0; i < 30; i++) {
+                const leaf = document.createElement('div');
+                leaf.className = 'leaf';
+                leaf.style.left = `${Math.random() * 100}vw`;
+                leaf.style.animationDelay = `${Math.random() * 5}s`;
+                leaf.style.animationDuration = `${Math.random() * 3 + 3}s`;
+                leaf.style.backgroundColor = `hsl(35, 53%, ${Math.random() * 30 + 40}%)`;
+                container.appendChild(leaf);
+            }
+            
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 5000);
         }
 
         function triggerAIMove() {
@@ -756,6 +862,16 @@
                     } else if (bestMove.type === 'move') {
                         movePiece(bestMove.piece, bestMove.toX, bestMove.toY);
                     }
+                    
+                    const targetX = bestMove.type === 'flip' ? bestMove.x : bestMove.toX;
+                    const targetY = bestMove.type === 'flip' ? bestMove.y : bestMove.toY;
+                    const pieceEl = document.querySelector(`.piece[data-x='${targetX}'][data-y='${targetY}']`);
+                    if(pieceEl) {
+                        removeAiHighlight();
+                        pieceEl.classList.add('ai-move-highlight');
+                        lastAiMoveEl = pieceEl;
+                    }
+
                 } else {
                     console.error("AI has no moves, but checkEndGame failed.");
                     const opponentColor = aiColor === 'red' ? '黑方' : '紅方';
@@ -765,10 +881,8 @@
         }
 
         // --- AI Logic ---
-
         function getAllPossibleMoves(board, color) {
             const moves = [];
-            // 移動和吃子
             for (let y = 0; y < BOARD_HEIGHT; y++) {
                 for (let x = 0; x < BOARD_WIDTH; x++) {
                     const piece = board[y][x];
@@ -780,7 +894,6 @@
                     }
                 }
             }
-            // 翻棋
             for (let y = 0; y < BOARD_HEIGHT; y++) {
                 for (let x = 0; x < BOARD_WIDTH; x++) {
                     const piece = board[y][x];
@@ -827,15 +940,12 @@
             }
         }
 
-        // --- Novice AI ---
         function findBestMoveNovice() {
             const allMoves = getAllPossibleMoves(boardState, aiColor);
             if (allMoves.length === 0) return null;
 
-            // 簡單策略：優先吃子，否則隨機移動或翻棋
             const captureMoves = allMoves.filter(m => m.type === 'move' && boardState[m.toY][m.toX] !== null);
             if (captureMoves.length > 0) {
-                // 在可吃的棋中，吃價值最高的
                 captureMoves.sort((a, b) => {
                     const valA = pieceValues[boardState[a.toY][a.toX].name];
                     const valB = pieceValues[boardState[b.toY][b.toX].name];
@@ -847,12 +957,10 @@
             const nonCaptureMoves = allMoves.filter(m => m.type === 'move' && boardState[m.toY][m.toX] === null);
             const flipMoves = allMoves.filter(m => m.type === 'flip');
 
-            // 如果有移動的棋，優先移動
             if(nonCaptureMoves.length > 0){
                 return nonCaptureMoves[Math.floor(Math.random() * nonCaptureMoves.length)];
             }
             
-            // 否則翻棋
             if (flipMoves.length > 0) {
                  return flipMoves[Math.floor(Math.random() * flipMoves.length)];
             }
@@ -860,7 +968,6 @@
             return null;
         }
 
-        // --- Master AI ---
         function evaluateBoardMaster(board) {
             let score = 0;
             let aiMobility = 0;
@@ -929,20 +1036,18 @@
             const allMoves = getAllPossibleMoves(boardState, aiColor);
             if (allMoves.length === 0) return null;
 
-            let bestMove = allMoves[0]; // 預設一個走法，防止逾時沒有任何結果
+            let bestMove = allMoves[0];
             let bestScore = -Infinity;
             let depth = 1;
 
             while (true) {
                 const elapsedTime = performance.now() - startTime;
                 if (elapsedTime > AI_TIME_LIMIT) {
-                    console.log(`Time limit reached. Best move from depth ${depth - 1}.`);
                     break;
                 }
                 
                 let currentBestMoveForDepth = null;
                 let currentBestScoreForDepth = -Infinity;
-
                 const FLIP_BIAS = evaluateBoardMaster(boardState) + 15;
 
                 for (const move of allMoves) {
@@ -956,7 +1061,7 @@
                         const pieceCopy = boardCopy[move.fromY][move.fromX];
                         performMove(pieceCopy, move.toX, move.toY, boardCopy, true);
                         currentMoveScore = minimax(boardCopy, depth, false, -Infinity, Infinity, evaluateBoardMaster);
-                    } else { // 'flip'
+                    } else {
                         currentMoveScore = FLIP_BIAS;
                         if (move.x > 0 && move.x < 3) currentMoveScore += 5;
                     }
@@ -967,18 +1072,14 @@
                     }
                 }
                 
-                // 只有在當前深度完整跑完時，才更新最佳走法
                 if (performance.now() - startTime < AI_TIME_LIMIT) {
                     if (currentBestMoveForDepth) {
                         bestMove = currentBestMoveForDepth;
                         bestScore = currentBestScoreForDepth;
                     }
                 } else {
-                    // 如果當前深度搜尋超時，就跳出循環，使用上一個深度的結果
                     break;
                 }
-
-                console.log(`Depth ${depth} finished. Best score: ${bestScore}. Move:`, bestMove);
                 depth++;
             }
             
@@ -994,10 +1095,11 @@
         restartBtn.addEventListener('click', () => {
             gameWrapper.classList.add('hidden');
             startScreen.classList.remove('hidden');
+            closeAllModals();
         });
 
-        victoryModal.addEventListener('click', () => victoryModal.classList.remove('show'));
-        defeatModal.addEventListener('click', () => defeatModal.classList.remove('show'));
+        victoryModal.addEventListener('click', closeAllModals);
+        defeatModal.addEventListener('click', closeAllModals);
 
         setupSounds();
     </script>
