@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>藍氏暗棋</title>
+    <title>藍氏暗棋 (規則更新版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -24,13 +24,19 @@
             --font-family-piece: 'Ma Shan Zheng', cursive;
         }
 
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* 防止桌面版滾動 */
+        }
+
         body {
             font-family: var(--font-family-status);
             background-color: #f0e9dc;
             background-image: url('https://www.transparenttextures.com/patterns/wood-pattern.png');
             background-size: cover;
             background-position: center;
-            overflow: hidden; /* 防止動畫元素超出畫面 */
         }
 
         .game-screen {
@@ -38,7 +44,7 @@
             align-items: center;
             justify-content: center;
             width: 100%;
-            min-height: 100vh;
+            height: 100%;
             position: fixed;
             top: 0;
             left: 0;
@@ -100,13 +106,14 @@
             align-items: center;
             justify-content: center;
             width: 100%;
-            min-height: 100vh;
+            height: 100%;
+            overflow-y: auto; /* 允許在手機上垂直滾動 */
         }
 
         .game-container {
             width: 100%;
             max-width: 500px;
-            margin: 2rem auto;
+            margin: 1rem auto; /* 調整邊距以容納標題 */
             padding: 1.5rem;
             background-color: var(--board-bg);
             border-radius: 15px;
@@ -369,6 +376,7 @@
 
     <div id="game-wrapper" class="game-wrapper hidden">
         <div class="game-container">
+            <h1 class="text-4xl font-bold text-center mb-2" style="font-family: var(--font-family-piece); color: var(--black-text); text-shadow: 1px 1px 2px rgba(0,0,0,0.2);">藍氏暗棋</h1>
             <div id="game-status"></div>
             <div id="game-board"></div>
             <div class="text-center mt-4">
@@ -418,20 +426,19 @@
             'p': { rank: 1, name: '卒' }, 's': { rank: 1, 'name': '兵' }
         };
         
-        // 根據新規則調整棋子價值
         const pieceValues = { 
             '帥': 10000, '將': 10000, 
             '仕': 120, '士': 120, 
             '相': 120, '象': 120, 
-            '俥': 600, '車': 600, // 提升價值
-            '傌': 350, '馬': 350, // 提升價值
-            '砲': 450, '炮': 450, // 提升價值
+            '俥': 600, '車': 600, 
+            '傌': 350, '馬': 350,
+            '砲': 450, '炮': 450,
             '兵': 80, '卒': 80 
         };
 
         const PIECES = [
             { id: 'g1', color: 'red', ...PIECE_CONFIG['g'] }, { id: 'd1', color: 'red', ...PIECE_CONFIG['d'] }, { id: 'd2', color: 'red', ...PIECE_CONFIG['d'] }, { id: 'h1', color: 'red', ...PIECE_CONFIG['h'] }, { id: 'h2', color: 'red', ...PIECE_CONFIG['h'] }, { id: 't1', color: 'red', ...PIECE_CONFIG['t'] }, { id: 't2', color: 'red', ...PIECE_CONFIG['t'] }, { id: 'n1', color: 'red', ...PIECE_CONFIG['n'] }, { id: 'n2', color: 'red', ...PIECE_CONFIG['n'] }, { id: 'x1', color: 'red', ...PIECE_CONFIG['x'] }, { id: 'x2', color: 'red', ...PIECE_CONFIG['x'] }, { id: 's1', color: 'red', ...PIECE_CONFIG['s'] }, { id: 's2', color: 'red', ...PIECE_CONFIG['s'] }, { id: 's3', color: 'red', ...PIECE_CONFIG['s'] }, { id: 's4', color: 'red', ...PIECE_CONFIG['s'] }, { id: 's5', color: 'red', ...PIECE_CONFIG['s'] },
-            { id: 'k1', color: 'black', ...PIECE_CONFIG['k'] }, { id: 'a1', color: 'black', ...PIECE_CONFIG['a'] }, { id: 'a2', color: 'black', ...PIECE_CONFIG['a'] }, { id: 'e1', color: 'black', ...PIECE_CONFIG['e'] }, { id: 'e2', color: 'black', ...PIECE_CONFIG['e'] }, { id: 'r1', color: 'black', ...PIECE_CONFIG['r'] }, { id: 'r2', color: 'black', ...PIECE_CONFIG['r'] }, { id: 'm1', color: 'black', ...PIECE_CONFIG['m'] }, { id: 'm2', color: 'black', ...PIECE_CONFIG['m'] }, { id: 'c1', color: 'black', ...PIECE_CONFIG['c'] }, { id: 'c2', color: 'black', ...PIECE_CONFIG['c'] }, { id: 'p1', color: 'black', ...PIECE_CONFIG['p'] }, { id: 'p2', color: 'black', ...PIECE_CONFIG['p'] }, { id: 'p3', color: 'black', ...PIECE_CONFIG['p'] }, { id: 'p4', color: 'black', ...PIECE_CONFIG['p'] }, { id: 'p5', color: 'black', ...PIECE_CONFIG['p'] },
+            { id: 'k1', color: 'black', ...PIECE_CONFIG['k'] }, { id: 'a1', color: 'black', ...PIECE_CONFIG['a'] }, { id: 'a2', color: 'black', ...PIECE_CONFIG['a'] }, { id: 'e1', color: 'black', ...PIECE_CONFIG['e'] }, { id: 'e2', 'color': 'black', ...PIECE_CONFIG['e'] }, { id: 'r1', color: 'black', ...PIECE_CONFIG['r'] }, { id: 'r2', 'color': 'black', ...PIECE_CONFIG['r'] }, { id: 'm1', color: 'black', ...PIECE_CONFIG['m'] }, { id: 'm2', 'color': 'black', ...PIECE_CONFIG['m'] }, { id: 'c1', color: 'black', ...PIECE_CONFIG['c'] }, { id: 'c2', 'color': 'black', ...PIECE_CONFIG['c'] }, { id: 'p1', color: 'black', ...PIECE_CONFIG['p'] }, { id: 'p2', 'color': 'black', ...PIECE_CONFIG['p'] }, { id: 'p3', color: 'black', ...PIECE_CONFIG['p'] }, { id: 'p4', 'color': 'black', ...PIECE_CONFIG['p'] }, { id: 'p5', color: 'black', ...PIECE_CONFIG['p'] },
         ];
         
         let boardState = [];
@@ -450,13 +457,17 @@
         
         function setupSounds() {
             if (typeof Tone === 'undefined') return;
-            flipSound = new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0.0, release: 0.1 } }).toDestination();
-            moveSound = new Tone.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0 } }).toDestination();
-            captureSound = new Tone.MembraneSynth({ pitchDecay: 0.05, octaves: 10, oscillator: { type: 'sine' }, envelope: { attack: 0.001, decay: 0.4, sustain: 0.01, release: 1.4, attackCurve: 'exponential' } }).toDestination();
+            try {
+                flipSound = new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0.0, release: 0.1 } }).toDestination();
+                moveSound = new Tone.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0 } }).toDestination();
+                captureSound = new Tone.MembraneSynth({ pitchDecay: 0.05, octaves: 10, oscillator: { type: 'sine' }, envelope: { attack: 0.001, decay: 0.4, sustain: 0.01, release: 1.4, attackCurve: 'exponential' } }).toDestination();
+            } catch (e) {
+                console.error("音效初始化失敗:", e);
+            }
         }
 
         function playSound(type) {
-             if (typeof Tone === 'undefined' || Tone.context.state !== 'running') return;
+             if (typeof Tone === 'undefined' || !flipSound || Tone.context.state !== 'running') return;
             try {
                 if (type === 'flip') flipSound.triggerAttackRelease('C5', '8n');
                 if (type === 'move') moveSound.triggerAttackRelease('0.1');
@@ -566,7 +577,7 @@
 
         function handlePieceClick(e) {
             if (typeof Tone !== 'undefined' && Tone.context.state !== 'running') {
-                Tone.start();
+                Tone.start().catch(err => console.error("Tone.start() failed", err));
             }
 
             if (gameOver || !isPlayerTurn) return;
@@ -587,6 +598,12 @@
                     selectedPiece = null;
                     clearHighlights();
                     renderBoard();
+                    if (clickedPiece && clickedPiece.isFlipped && clickedPiece.color === currentPlayer) {
+                        selectedPiece = clickedPiece;
+                        renderBoard();
+                        const moves = getValidMovesForPiece(selectedPiece, boardState);
+                        highlightMoves(moves);
+                    }
                 }
             } else {
                 if (!clickedPiece) return;
@@ -661,7 +678,7 @@
         }
         
         // =======================================================
-        // 主要規則更新函式
+        // isValidMove 函式已重構，確保規則清晰正確
         // =======================================================
         function isValidMove(piece, toX, toY, board) {
             const target = board[toY][toX];
@@ -670,65 +687,62 @@
             const dx = Math.abs(fromX - toX);
             const dy = Math.abs(fromY - toY);
 
-            // 通用規則：不能吃未翻開的或己方棋子
-            if (target && !target.isFlipped) return false;
-            if (target && target.color === piece.color) return false;
+            // 通用規則
+            if (fromX === toX && fromY === toY) return false; // 不能移動到原地
+            if (target && target.color === piece.color) return false; // 不能吃己方棋子
+            if (target && !target.isFlipped) return false; // 不能吃未翻開的棋子
 
-            // --- 特殊棋子規則 ---
+            // 吃子判斷輔助函式 (給除了車、炮、馬以外的棋子使用)
+            const canCaptureStandard = (attacker, defender) => {
+                if (!defender) return false; // 目標是空格，不是吃子
+                if (attacker.rank === 1 && defender.rank === 7) return true; // 兵吃將
+                if (attacker.rank === 7 && defender.rank === 1) return false; // 將不吃兵
+                return attacker.rank >= defender.rank;
+            };
 
-            // 馬 (Horse): 走日字，可越子
-            if (piece.name === '馬' || piece.name === '傌') {
-                if ((dx === 1 && dy === 2) || (dx === 2 && dy === 1)) {
-                    if (target) { // 吃子，採用標準大小規則
-                        if (piece.rank === 1 && target.rank === 7) return true;
-                        if (piece.rank === 7 && target.rank === 1) return false;
-                        return piece.rank >= target.rank;
-                    }
-                    return true; // 移動到空格
-                }
-                return false; // 如果不是日字走法，則無效
-            }
-
-            // 炮 (Cannon): 隔一子吃任意子 (除了炮)
-            if (piece.name === '炮' || piece.name === '砲') {
-                if (target) { // 必須是吃子
-                    if (getPiecesBetween(piece, {x: toX, y: toY}, board).length === 1) {
-                        // 新規則：可吃除了炮以外的任何棋子
-                        return target.name !== '炮' && target.name !== '砲';
-                    }
-                }
-                // 炮不能移動到空格，除非走一步
-                if (!target && dx + dy === 1) {
-                    return true;
-                }
-                return false;
-            }
-
-            // 車 (Chariot): 遠程吃任意子，或走一步
+            // 規則 for 車 (Chariot)
             if (piece.name === '車' || piece.name === '俥') {
-                if (target && (dx === 0 || dy === 0)) { // 直線吃子
-                    if (getPiecesBetween(piece, {x: toX, y: toY}, board).length === 0) {
-                        // 新規則：可吃任意大小的棋子
+                if (target) { // 吃子 (車直衝)
+                    if ((dx === 0 || dy === 0) && getPiecesBetween(piece, {x: toX, y: toY}, board).length === 0) {
+                        return true; // 車可以吃任何大小的棋子
+                    }
+                } else { // 移動到空格
+                    if (dx + dy === 1) {
                         return true;
                     }
                 }
-                // 走一步到空格
-                if (!target && dx + dy === 1) {
+                return false;
+            }
+            
+            // 規則 for 馬 (Horse)
+            if (piece.name === '馬' || piece.name === '傌') {
+                if ((dx === 1 && dy === 2) || (dx === 2 && dy === 1)) {
+                    // 馬走日字，可以吃任何大小的棋子
                     return true;
                 }
                 return false;
             }
 
-            // --- 其他棋子 (帥, 仕, 相, 兵) 的標準規則 ---
-            if (dx + dy !== 1) return false; // 只能走一步
+            // 規則 for 炮 (Cannon) - 根據使用者最新要求修正
+            if (piece.name === '炮' || piece.name === '砲') {
+                // 情況 1: 隔一子跳吃 (可以吃任何大小的棋子)
+                if (target && (dx === 0 || dy === 0) && getPiecesBetween(piece, {x: toX, y: toY}, board).length === 1) {
+                    return true;
+                }
+                // 情況 2: 移動一格到空格
+                if (!target && dx + dy === 1) {
+                    return true;
+                }
+                // 其他所有情況對炮都無效
+                return false;
+            }
 
-            if (target) { // 吃子
-                if (piece.rank === 1 && target.rank === 7) return true; // 兵吃將
-                if (piece.rank === 7 && target.rank === 1) return false; // 將不吃兵
-                return piece.rank >= target.rank; // 標準大小規則
+            // 將, 士, 象, 兵 的預設規則 (移動一格)
+            if (dx + dy === 1) {
+                return !target || canCaptureStandard(piece, target);
             }
             
-            return true; // 移動到空格
+            return false;
         }
 
         function getPiecesBetween(p1, p2, board) {
@@ -759,15 +773,18 @@
             for(let y=0; y<BOARD_HEIGHT; y++) {
                 for(let x=0; x<BOARD_WIDTH; x++) {
                     const piece = boardState[y][x];
-                    if (piece) {
+                    if (piece && piece.isFlipped) {
                         if (piece.color === 'red') redPieces.push(piece);
                         else blackPieces.push(piece);
                     }
                 }
             }
+            
+            const anyRedFlipped = boardState.flat().some(p => p && p.isFlipped && p.color === 'red');
+            const anyBlackFlipped = boardState.flat().some(p => p && p.isFlipped && p.color === 'black');
 
-            if (redPieces.length === 0) { endGame('黑方'); return true; }
-            if (blackPieces.length === 0) { endGame('紅方'); return true; }
+            if (anyRedFlipped && redPieces.length === 0) { endGame('黑方'); return true; }
+            if (anyBlackFlipped && blackPieces.length === 0) { endGame('紅方'); return true; }
 
             const currentPlayerMoves = getAllPossibleMoves(boardState, currentPlayer);
             if (currentPlayerMoves.length === 0) {
